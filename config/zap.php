@@ -16,7 +16,7 @@ return [
             'applies_to' => [
                 // Which schedule types get this rule automatically
                 \Zap\Enums\ScheduleTypes::APPOINTMENT,
-                \Zap\Enums\ScheduleTypes::BLOCKED,
+                // \Zap\Enums\ScheduleTypes::BLOCKED,
             ],
         ],
         'working_hours' => [
