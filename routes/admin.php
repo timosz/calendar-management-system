@@ -6,10 +6,10 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UnavailabilityController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware(['auth', 'verified']);
+// Dashboard routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// Admin routes
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     // Availability routes
     Route::resource('availabilities', AvailabilityController::class);
 
