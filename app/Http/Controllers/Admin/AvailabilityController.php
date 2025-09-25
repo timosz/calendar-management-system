@@ -38,14 +38,14 @@ class AvailabilityController extends Controller
                 ];
             });
 
-        return Inertia::render('Admin/Availabilities/Index', [
+        return Inertia::render('admin/availabilities/Index', [
             'availabilities' => $availabilities,
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/Availabilities/Create');
+        return Inertia::render('admin/availabilities/Create');
     }
 
     public function store(Request $request)
@@ -58,9 +58,13 @@ class AvailabilityController extends Controller
             'periods' => 'required|array|min:1',
             'periods.*.start_time' => 'required|date_format:H:i',
             'periods.*.end_time' => 'required|date_format:H:i|after:periods.*.start_time',
-            'recurrence_type' => 'nullable|in:daily,weekly,monthly',
-            'recurrence_days' => 'nullable|array',
+            'periods.*.day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'recurrence_type' => 'nullable|in:weekly',
+            'recurrence_days' => 'required_if:recurrence_type,weekly|array',
+            'recurrence_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
         ]);
+
+        $this->validatePeriodOverlaps($request->periods);
 
         $user = auth()->user();
 
@@ -75,24 +79,14 @@ class AvailabilityController extends Controller
                 $schedule->to($request->end_date);
             }
 
-            // Add periods
+            // Add periods (Zap will handle multiple periods automatically)
             foreach ($request->periods as $period) {
                 $schedule->addPeriod($period['start_time'], $period['end_time']);
             }
 
-            // Handle recurrence
-            if ($request->recurrence_type && $request->recurrence_days) {
-                switch ($request->recurrence_type) {
-                    case 'daily':
-                        $schedule->daily();
-                        break;
-                    case 'weekly':
-                        $schedule->weekly($request->recurrence_days);
-                        break;
-                    case 'monthly':
-                        $schedule->monthly($request->recurrence_days);
-                        break;
-                }
+            // Handle weekly recurrence
+            if ($request->recurrence_type === 'weekly' && $request->recurrence_days) {
+                $schedule->weekly($request->recurrence_days);
             }
 
             $schedule->save();
@@ -146,7 +140,21 @@ class AvailabilityController extends Controller
             ->with('periods')
             ->findOrFail($id);
 
-        return Inertia::render('Admin/Availabilities/Edit', [
+        // Group periods by day if we have recurrence pattern
+        $periodsByDay = [];
+        if ($availability->recurrence_pattern && isset($availability->recurrence_pattern['days'])) {
+            foreach ($availability->recurrence_pattern['days'] as $day) {
+                $periodsByDay[$day] = $availability->periods->map(function ($period) {
+                    return [
+                        'id' => $period->id,
+                        'start_time' => $period->start_time,
+                        'end_time' => $period->end_time,
+                    ];
+                })->toArray();
+            }
+        }
+
+        return Inertia::render('admin/availabilities/Edit', [
             'availability' => [
                 'id' => $availability->id,
                 'name' => $availability->name,
@@ -161,6 +169,7 @@ class AvailabilityController extends Controller
                     ];
                 }),
                 'recurrence_pattern' => $availability->recurrence_pattern,
+                'periods_by_day' => $periodsByDay, // Add this for easier frontend processing
             ],
         ]);
     }
@@ -175,7 +184,13 @@ class AvailabilityController extends Controller
             'periods' => 'required|array|min:1',
             'periods.*.start_time' => 'required|date_format:H:i',
             'periods.*.end_time' => 'required|date_format:H:i|after:periods.*.start_time',
+            'periods.*.day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'recurrence_type' => 'nullable|in:weekly',
+            'recurrence_days' => 'required_if:recurrence_type,weekly|array',
+            'recurrence_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
         ]);
+
+        $this->validatePeriodOverlaps($request->periods);
 
         $user = auth()->user();
 
@@ -184,22 +199,31 @@ class AvailabilityController extends Controller
             ->findOrFail($id);
 
         try {
-            $availability->update([
-                'name' => $request->name,
-                'description' => $request->description,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-            ]);
+            // Delete the existing schedule and create a new one
+            // This is necessary because Zap's fluent API is designed for creation
+            $availability->delete();
 
-            // Update periods - delete existing and create new ones
-            $availability->periods()->delete();
+            $schedule = Zap::for($user)
+                ->named($request->name)
+                ->description($request->description)
+                ->availability()
+                ->from($request->start_date);
 
-            foreach ($request->periods as $period) {
-                $availability->periods()->create([
-                    'start_time' => $period['start_time'],
-                    'end_time' => $period['end_time'],
-                ]);
+            if ($request->end_date) {
+                $schedule->to($request->end_date);
             }
+
+            // Add periods (Zap will handle multiple periods automatically)
+            foreach ($request->periods as $period) {
+                $schedule->addPeriod($period['start_time'], $period['end_time']);
+            }
+
+            // Handle weekly recurrence
+            if ($request->recurrence_type === 'weekly' && $request->recurrence_days) {
+                $schedule->weekly($request->recurrence_days);
+            }
+
+            $schedule->save();
 
             return redirect()->route('admin.availabilities.index')
                 ->with('success', 'Availability updated successfully.');
@@ -224,5 +248,25 @@ class AvailabilityController extends Controller
         return redirect()->route('admin.availabilities.index')
             ->with('success', 'Availability deleted successfully.');
     }
-}
 
+    /**
+     * Validate that periods don't overlap within the same day
+     */
+    private function validatePeriodOverlaps($periods)
+    {
+        $periodsByDay = collect($periods)->groupBy('day');
+
+        foreach ($periodsByDay as $day => $dayPeriods) {
+            $sortedPeriods = $dayPeriods->sortBy('start_time');
+
+            for ($i = 0; $i < count($sortedPeriods) - 1; $i++) {
+                $currentPeriod = $sortedPeriods->values()[$i];
+                $nextPeriod = $sortedPeriods->values()[$i + 1];
+
+                if ($currentPeriod['end_time'] > $nextPeriod['start_time']) {
+                    throw new \Exception("Time periods overlap on {$day}. Please ensure periods don't overlap.");
+                }
+            }
+        }
+    }
+}
