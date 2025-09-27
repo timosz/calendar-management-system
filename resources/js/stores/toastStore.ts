@@ -5,45 +5,35 @@ interface Toast {
     message: string;
     type: 'success' | 'error' | 'warning' | 'info';
     duration: number;
-    timestamp: number;
-    source: string;
 }
 
 export const useToastStore = defineStore('toast', {
     state: () => ({
         toasts: [] as Toast[],
         lastToastId: 0,
+        isListenerSetup: false,
     }),
 
     actions: {
-        addToast(message: string, type: Toast['type'] = 'success', duration = 7000, source = 'unknown'): number | void {
-            // Don't add toasts with empty or undefined messages
-            if (!message || message === type) {
-                return;
-            }
+        addToast(message: string, type: Toast['type'] = 'success', duration = 7000): number | void {
+            // Don't add toasts with empty messages
+            if (!message) return;
 
-            // Don't add exactly duplicate messages
+            // Don't add duplicate messages
             if (this.toasts.some((toast) => toast.message === message && toast.type === type)) {
                 return;
             }
 
-            // Clear all existing toasts first
-            this.clearToasts();
-
-            // Create new toast
             const id = ++this.lastToastId;
 
-            // Add toast to store
             this.toasts.push({
                 id,
                 message,
                 type,
                 duration,
-                timestamp: Date.now(),
-                source: source,
             });
 
-            // Automatically remove the toast after duration
+            // Auto-remove toast after duration
             setTimeout(() => {
                 this.removeToast(id);
             }, duration);
@@ -59,130 +49,67 @@ export const useToastStore = defineStore('toast', {
             this.toasts = [];
         },
 
-        processFlashMessages(flash: any) {
-            if (!flash) return;
+        // Process flash messages and validation errors from Inertia
+        processPageData(pageProps: any) {
+            if (!pageProps) return;
 
-            if (flash.success) {
-                this.addToast(flash.success, 'success', 7000, 'flash-success');
+            const { flash, errors } = pageProps;
+
+            // Handle flash messages
+            if (flash?.success) {
+                this.addToast(flash.success, 'success');
             }
-            if (flash.error) {
-                this.addToast(flash.error, 'error', 7000, 'flash-error');
+            if (flash?.error) {
+                this.addToast(flash.error, 'error');
             }
-            if (flash.warning) {
-                this.addToast(flash.warning, 'warning', 7000, 'flash-warning');
+            if (flash?.warning) {
+                this.addToast(flash.warning, 'warning');
             }
-            if (flash.info) {
-                this.addToast(flash.info, 'info', 7000, 'flash-info');
+            if (flash?.info) {
+                this.addToast(flash.info, 'info');
+            }
+
+            // Handle validation errors
+            if (errors && Object.keys(errors).length > 0) {
+                const errorMessages = Object.values(errors).flat() as string[];
+                const totalErrors = errorMessages.length;
+
+                if (totalErrors === 1) {
+                    this.addToast(errorMessages[0], 'error');
+                } else {
+                    this.addToast(`${totalErrors} validation errors occurred. Please check the form.`, 'error');
+                }
             }
         },
 
-        // Updated to handle both flash messages and validation errors
-        setupFlashListener() {
-            // Check for flash messages and validation errors on page load
-            const checkInitialMessages = () => {
-                // Try multiple ways to access Inertia page data
-                let pageProps = null;
+        // Set up Inertia event listeners (call once from ToastContainer)
+        setupInertiaListener() {
+            if (this.isListenerSetup || typeof window === 'undefined') return;
 
-                // Method 1: Check window.Inertia (older versions)
-                if ((window as any)?.Inertia?.page?.props) {
-                    pageProps = (window as any).Inertia.page.props;
-                }
-
-                // Method 2: Check for newer Inertia structure
-                if (!pageProps && (window as any)?.__inertia?.page?.props) {
-                    pageProps = (window as any).__inertia.page.props;
-                }
-
-                // Method 3: Try to get from app element data attribute
-                if (!pageProps) {
-                    const appElement = document.getElementById('app');
-                    if (appElement && appElement.hasAttribute('data-page')) {
-                        try {
-                            const pageData = JSON.parse(appElement.getAttribute('data-page') || '{}');
-                            pageProps = pageData.props;
-                        } catch (e) {
-                            console.warn('Failed to parse page data from app element:', e);
-                        }
+            // Process initial page data
+            setTimeout(() => {
+                const appElement = document.getElementById('app');
+                if (appElement?.dataset.page) {
+                    try {
+                        const pageData = JSON.parse(appElement.dataset.page);
+                        this.processPageData(pageData.props);
+                    } catch (e) {
+                        console.warn('Failed to parse initial page data for toasts');
                     }
                 }
+            }, 100);
 
-                if (!pageProps) {
-                    console.warn('Toast Debug - No page props found');
-                    return;
-                }
-
-                const flash = pageProps.flash;
-                const errors = pageProps.errors;
-
-                // Handle flash messages
-                if (flash) {
-                    if (flash.message) {
-                        const type = flash.type || 'success';
-                        this.addToast(flash.message, type, 7000, 'store-initial-message');
-                    } else if (flash.success) {
-                        this.addToast(flash.success, 'success', 7000, 'store-initial-success');
-                    } else if (flash.error) {
-                        this.addToast(flash.error, 'error');
-                    }
-                }
-
-                // Handle validation errors
-                if (errors && Object.keys(errors).length > 0) {
-                    const errorMessages = Object.values(errors).flat();
-                    const firstError = errorMessages[0] as string;
-                    const totalErrors = errorMessages.length;
-
-                    if (totalErrors === 1) {
-                        this.addToast(firstError, 'error', 7000, 'validation-error');
-                    } else {
-                        this.addToast(`${totalErrors} validation errors occurred. Please check the form.`, 'error', 7000, 'validation-errors');
-                    }
+            // Listen for Inertia navigation
+            const handleInertiaFinish = (event: any) => {
+                // Be defensive about the event structure
+                const pageProps = event?.detail?.page?.props;
+                if (pageProps) {
+                    this.processPageData(pageProps);
                 }
             };
 
-            // Handle messages during Inertia page visits
-            const handleInertiaSuccess = (event: any) => {
-                const pageProps = event.detail.page.props;
-                const flash = pageProps.flash;
-                const errors = pageProps.errors;
-
-                // Handle flash messages
-                if (flash) {
-                    if (flash.message) {
-                        const type = flash.type || 'success';
-                        this.addToast(flash.message, type, 7000, 'store-inertia-message');
-                    } else if (flash.success) {
-                        this.addToast(flash.success, 'success', 7000, 'store-inertia-success');
-                    } else if (flash.error) {
-                        this.addToast(flash.error, 'error');
-                    }
-                }
-
-                // Handle validation errors
-                if (errors && Object.keys(errors).length > 0) {
-                    const errorMessages = Object.values(errors).flat();
-                    const firstError = errorMessages[0] as string;
-                    const totalErrors = errorMessages.length;
-
-                    if (totalErrors === 1) {
-                        this.addToast(firstError, 'error', 7000, 'validation-error');
-                    } else {
-                        this.addToast(`${totalErrors} validation errors occurred. Please check the form.`, 'error', 7000, 'validation-errors');
-                    }
-                }
-            };
-
-            // Add listeners if we're in browser environment
-            if (typeof window !== 'undefined') {
-                // Use setTimeout to ensure DOM is ready
-                setTimeout(() => {
-                    checkInitialMessages();
-                }, 100);
-
-                // Listen for future page visits - try multiple event types
-                window.addEventListener('inertia:success', handleInertiaSuccess);
-                window.addEventListener('inertia:finish', handleInertiaSuccess);
-            }
+            document.addEventListener('inertia:finish', handleInertiaFinish);
+            this.isListenerSetup = true;
         },
     },
 });

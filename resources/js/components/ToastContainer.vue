@@ -1,34 +1,39 @@
 <script setup lang="ts">
-import { useToastStore } from '@/stores/toastStore';
-import { AlertCircle, CheckCircle, Info, X, XCircle } from 'lucide-vue-next';
+    import { useToastStore } from '@/stores/toastStore';
+    import { AlertCircle, CheckCircle, Info, X, XCircle } from 'lucide-vue-next';
+    import { onMounted } from 'vue';
 
-const toastStore = useToastStore();
+    const toastStore = useToastStore();
 
-const removeToast = (id: number) => {
-    toastStore.removeToast(id);
-};
+    // Set up Inertia listener when component mounts
+    onMounted(() => {
+        toastStore.setupInertiaListener();
+    });
 
-const typeToIcon = {
-    success: CheckCircle,
-    error: XCircle,
-    warning: AlertCircle,
-    info: Info,
-};
+    const removeToast = (id: number) => {
+        toastStore.removeToast(id);
+    };
 
-// Improved color schemes for better dark mode support
-const typeToColors = {
-    success: 'bg-green-50 text-green-800 dark:bg-green-900 dark:text-green-100 ring-1 ring-green-200 dark:ring-green-800',
-    error: 'bg-red-50 text-red-800 dark:bg-red-900 dark:text-red-100 ring-1 ring-red-200 dark:ring-red-800',
-    warning: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 ring-1 ring-yellow-200 dark:ring-yellow-800',
-    info: 'bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-100 ring-1 ring-blue-200 dark:ring-blue-800',
-};
+    const typeToIcon = {
+        success: CheckCircle,
+        error: XCircle,
+        warning: AlertCircle,
+        info: Info,
+    };
 
-const iconColors = {
-    success: 'text-green-500 dark:text-green-300',
-    error: 'text-red-500 dark:text-red-300',
-    warning: 'text-yellow-500 dark:text-yellow-300',
-    info: 'text-blue-500 dark:text-blue-300',
-};
+    const typeToColors = {
+        success: 'bg-green-50 text-green-800 dark:bg-green-900 dark:text-green-100 ring-1 ring-green-200 dark:ring-green-800',
+        error: 'bg-red-50 text-red-800 dark:bg-red-900 dark:text-red-100 ring-1 ring-red-200 dark:ring-red-800',
+        warning: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 ring-1 ring-yellow-200 dark:ring-yellow-800',
+        info: 'bg-blue-50 text-blue-800 dark:bg-blue-900 dark:text-blue-100 ring-1 ring-blue-200 dark:ring-blue-800',
+    };
+
+    const iconColors = {
+        success: 'text-green-500 dark:text-green-300',
+        error: 'text-red-500 dark:text-red-300',
+        warning: 'text-yellow-500 dark:text-yellow-300',
+        info: 'text-blue-500 dark:text-blue-300',
+    };
 </script>
 
 <template>
@@ -47,7 +52,7 @@ const iconColors = {
             <div
                 v-for="toast in toastStore.toasts"
                 :key="toast.id"
-                class="pointer-events-auto mb-4 w-[280px] rounded-lg shadow-lg ring-1 ring-black/5 dark:ring-white/10 sm:w-[350px] lg:w-[450px]"
+                class="pointer-events-auto mb-4 w-[280px] rounded-lg shadow-lg ring-1 ring-black/5 sm:w-[350px] lg:w-[450px] dark:ring-white/10"
             >
                 <div :class="[typeToColors[toast.type], 'overflow-hidden rounded-lg']">
                     <div class="flex items-start p-4">
