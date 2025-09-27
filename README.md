@@ -12,7 +12,7 @@ A modern calendar management system built with Laravel 12, Vue.js, and Inertia.j
 
 ## Tech Stack
 
-- **Backend**: Laravel 12, Zap for Laravel (calendar package)
+- **Backend**: Laravel 12
 - **Frontend**: Vue.js 3 (Composition API), TypeScript, Inertia.js
 - **Styling**: Tailwind CSS, shadcn-vue components
 - **Database**: MySQL/PostgreSQL

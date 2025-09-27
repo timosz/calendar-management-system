@@ -9,15 +9,4 @@ use Illuminate\Support\Facades\Route;
 // Dashboard routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Availability routes
-    Route::resource('availabilities', AvailabilityController::class);
-
-    // Unavailability routes
-    Route::resource('unavailabilities', UnavailabilityController::class);
-
-    // Booking routes
-    Route::resource('bookings', BookingController::class);
-    Route::patch('bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
-    Route::patch('bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
 });
