@@ -1,15 +1,28 @@
 <?php
 
-use App\Http\Controllers\Admin\AvailabilityPeriodController;
+use App\Http\Controllers\Admin\AvailabilityController;
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\UnavailablePeriodController;
+use App\Http\Controllers\Admin\RestrictionController;
 use Illuminate\Support\Facades\Route;
 
-// Admin routes with authentication and verification middleware
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Availabilities
+    Route::resource('availabilities', AvailabilityController::class);
+    Route::patch('availabilities/{availability}/toggle-active', [AvailabilityController::class, 'toggleActive'])
+        ->name('availabilities.toggle-active');
+
+    // Restrictions
+    Route::resource('restrictions', RestrictionController::class);
+
+    // Bookings
+    Route::resource('bookings', BookingController::class)->only(['index', 'show', 'destroy']);
+    Route::patch('bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
+    Route::patch('bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
+    Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::patch('bookings/bulk-action', [BookingController::class, 'bulkAction'])->name('bookings.bulk-action');
+    Route::get('bookings/export', [BookingController::class, 'export'])->name('bookings.export');
 });
