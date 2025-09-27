@@ -19,7 +19,7 @@
         <AppSidebar />
         <AppContent variant="sidebar" class="overflow-x-hidden">
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-            <div class="p-4">
+            <div class="space-y-4 p-4">
                 <slot />
             </div>
         </AppContent>
