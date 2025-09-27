@@ -15,7 +15,6 @@
 <template>
     <div v-if="variant === 'header'" class="flex min-h-screen w-full flex-col">
         <slot />
-        <ToastContainer />
     </div>
     <SidebarProvider v-else :default-open="isOpen">
         <slot />
