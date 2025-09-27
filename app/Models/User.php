@@ -51,60 +51,34 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Get the availability periods for the user.
-     */
-    public function availabilityPeriods(): HasMany
+    public function availabilities()
     {
-        return $this->hasMany(AvailabilityPeriod::class);
+        return $this->hasMany(Availability::class);
     }
 
-    /**
-     * Get the active availability periods for the user.
-     */
-    public function activeAvailabilityPeriods(): HasMany
+    public function restrictions()
     {
-        return $this->hasMany(AvailabilityPeriod::class)->where('is_active', true);
+        return $this->hasMany(Restriction::class);
     }
 
-    /**
-     * Get the bookings for the user.
-     */
-    public function bookings(): HasMany
+    public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
 
     /**
-     * Get the confirmed bookings for the user.
+     * Get active availabilities for all days
      */
-    public function confirmedBookings(): HasMany
+    public function activeAvailabilities()
     {
-        return $this->hasMany(Booking::class)->where('status', Booking::STATUS_CONFIRMED);
+        return $this->availabilities()->active();
     }
 
     /**
-     * Get the pending bookings for the user.
+     * Get availability for a specific day
      */
-    public function pendingBookings(): HasMany
+    public function availabilityForDay(int $dayOfWeek)
     {
-        return $this->hasMany(Booking::class)->where('status', Booking::STATUS_PENDING);
-    }
-
-    /**
-     * Get the unavailable periods for the user.
-     */
-    public function unavailablePeriods(): HasMany
-    {
-        return $this->hasMany(UnavailablePeriod::class);
-    }
-
-    /**
-     * Get the current and future unavailable periods for the user.
-     */
-    public function currentAndFutureUnavailablePeriods(): HasMany
-    {
-        return $this->hasMany(UnavailablePeriod::class)
-                    ->where('end_date', '>=', now()->toDateString());
+        return $this->activeAvailabilities()->forDay($dayOfWeek)->first();
     }
 }
