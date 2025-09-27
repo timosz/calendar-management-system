@@ -4,7 +4,7 @@
     import NavUser from '@/components/NavUser.vue';
     import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
     import { dashboard } from '@/routes/admin'; // Import from admin routes
-    import { index as availabilityPeriodsIndex } from '@/routes/admin/availability-periods'; // Import availability periods route
+    import { index as availabilitiesIndex } from '@/routes/admin/availabilities'; // Import availability periods route
     import { NavItem } from '@/types';
     import { Link } from '@inertiajs/vue3';
     import { Calendar, Clock, LayoutDashboard } from 'lucide-vue-next';
@@ -17,8 +17,8 @@
             icon: LayoutDashboard,
         },
         {
-            title: 'Availability Periods',
-            href: availabilityPeriodsIndex(),
+            title: 'Availabilities',
+            href: availabilitiesIndex(),
             icon: Clock,
         },
     ];
