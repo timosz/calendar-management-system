@@ -3,79 +3,13 @@
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
     import AppLayout from '@/layouts/AppLayout.vue';
+    import type { BookingStatus, DashboardPageProps, Restriction, RestrictionType } from '@/types';
     import { Head, Link } from '@inertiajs/vue3';
     import { AlertCircle, Calendar, CalendarCheck, CalendarX, CheckCircle, Clock, XCircle } from 'lucide-vue-next';
 
-    interface Stats {
-        total_bookings: number;
-        pending_bookings: number;
-        confirmed_bookings: number;
-        this_week_bookings: number;
-        this_month_bookings: number;
-        active_availability_periods: number;
-        current_unavailable_periods: number;
-    }
+    defineProps<DashboardPageProps>();
 
-    interface Booking {
-        id: number;
-        booking_date: string;
-        start_time: string;
-        end_time: string;
-        status: 'pending' | 'confirmed' | 'rejected' | 'cancelled';
-        user?: {
-            name: string;
-            email: string;
-        };
-        created_at: string;
-    }
-
-    interface UnavailablePeriod {
-        id: number;
-        title: string;
-        start_date: string;
-        end_date: string;
-        description?: string;
-    }
-
-    interface StatusDistribution {
-        [key: string]: number;
-    }
-
-    interface TrendData {
-        week: string;
-        bookings: number;
-    }
-
-    interface MonthlyData {
-        month: string;
-        bookings: number;
-    }
-
-    interface AvailabilitySummary {
-        [key: string]: {
-            day: string;
-            periods: Array<{
-                time_range: string;
-                is_active: boolean;
-            }>;
-        };
-    }
-
-    defineProps<{
-        stats: Stats;
-        recentBookings: Booking[];
-        upcomingBookings: Booking[];
-        todaysBookings: Booking[];
-        currentUnavailablePeriods: UnavailablePeriod[];
-        statusDistribution: StatusDistribution;
-        weeklyTrend: TrendData[];
-        monthlyStats: MonthlyData[];
-        availabilitySummary: AvailabilitySummary;
-        currentDate: string;
-        currentTime: string;
-    }>();
-
-    const getStatusBadgeVariant = (status: string) => {
+    const getStatusBadgeVariant = (status: BookingStatus) => {
         switch (status) {
             case 'confirmed':
                 return 'default';
@@ -90,7 +24,7 @@
         }
     };
 
-    const getStatusIcon = (status: string) => {
+    const getStatusIcon = (status: BookingStatus) => {
         switch (status) {
             case 'confirmed':
                 return CheckCircle;
@@ -102,6 +36,23 @@
                 return AlertCircle;
             default:
                 return Clock;
+        }
+    };
+
+    const getRestrictionTypeColor = (type: RestrictionType) => {
+        switch (type) {
+            case 'holiday':
+                return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+            case 'break':
+                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+            case 'meeting':
+                return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+            case 'personal':
+                return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+            case 'maintenance':
+                return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+            default:
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
         }
     };
 
@@ -118,6 +69,18 @@
             month: 'short',
             day: 'numeric',
         });
+    };
+
+    const formatRestrictionDisplay = (restriction: Restriction) => {
+        let display = restriction.reason || `${restriction.type.charAt(0).toUpperCase() + restriction.type.slice(1)} Period`;
+
+        if (restriction.start_time && restriction.end_time) {
+            display += ` (${formatTime(restriction.start_time)} - ${formatTime(restriction.end_time)})`;
+        } else {
+            display += ' (All Day)';
+        }
+
+        return display;
     };
 </script>
 
@@ -162,19 +125,19 @@
                     <Calendar class="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div class="text-2xl font-bold text-green-600">{{ stats.active_availability_periods }}</div>
+                    <div class="text-2xl font-bold text-green-600">{{ stats.active_availabilities }}</div>
                     <p class="text-xs text-muted-foreground">Current time slots</p>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle class="text-sm font-medium">Unavailable Periods</CardTitle>
+                    <CardTitle class="text-sm font-medium">Current Restrictions</CardTitle>
                     <CalendarX class="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div class="text-2xl font-bold text-red-600">{{ stats.current_unavailable_periods }}</div>
-                    <p class="text-xs text-muted-foreground">Currently blocked</p>
+                    <div class="text-2xl font-bold text-red-600">{{ stats.current_restrictions }}</div>
+                    <p class="text-xs text-muted-foreground">Active today</p>
                 </CardContent>
             </Card>
         </div>
@@ -194,8 +157,8 @@
                                 <component :is="getStatusIcon(booking.status)" class="h-4 w-4" />
                                 <div>
                                     <p class="text-sm font-medium">{{ formatTime(booking.start_time) }} - {{ formatTime(booking.end_time) }}</p>
-                                    <p class="text-xs text-muted-foreground" v-if="booking.user">
-                                        {{ booking.user.name }}
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ booking.client_name }}
                                     </p>
                                 </div>
                             </div>
@@ -209,19 +172,22 @@
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Current Unavailable Periods</CardTitle>
+                    <CardTitle>Current Restrictions</CardTitle>
                     <CardDescription>Active blocks on your calendar</CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-3">
-                    <div v-if="currentUnavailablePeriods.length === 0" class="text-sm text-muted-foreground">
-                        No unavailable periods active today.
-                    </div>
+                    <div v-if="currentRestrictions.length === 0" class="text-sm text-muted-foreground">No restrictions active today.</div>
                     <div v-else class="space-y-2">
-                        <div v-for="period in currentUnavailablePeriods" :key="period.id" class="rounded-lg border p-2">
-                            <p class="text-sm font-medium">{{ period.title }}</p>
-                            <p class="text-xs text-muted-foreground">{{ formatDate(period.start_date) }} - {{ formatDate(period.end_date) }}</p>
-                            <p v-if="period.description" class="mt-1 text-xs text-muted-foreground">
-                                {{ period.description }}
+                        <div v-for="restriction in currentRestrictions" :key="restriction.id" class="rounded-lg border p-2">
+                            <div class="mb-1 flex items-start justify-between">
+                                <p class="text-sm font-medium">{{ formatRestrictionDisplay(restriction) }}</p>
+                                <span class="rounded px-1.5 py-0.5 text-xs font-medium" :class="getRestrictionTypeColor(restriction.type)">
+                                    {{ restriction.type }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-muted-foreground">
+                                {{ formatDate(restriction.start_date) }}
+                                <span v-if="restriction.start_date !== restriction.end_date"> - {{ formatDate(restriction.end_date) }} </span>
                             </p>
                         </div>
                     </div>
@@ -248,8 +214,8 @@
                             <div class="flex items-center space-x-3">
                                 <component :is="getStatusIcon(booking.status)" class="h-4 w-4" />
                                 <div>
-                                    <p class="text-sm font-medium" v-if="booking.user">
-                                        {{ booking.user.name }}
+                                    <p class="text-sm font-medium">
+                                        {{ booking.client_name }}
                                     </p>
                                     <p class="text-xs text-muted-foreground">
                                         {{ formatDate(booking.booking_date) }} at {{ formatTime(booking.start_time) }}
@@ -281,8 +247,8 @@
                             <div class="flex items-center space-x-3">
                                 <component :is="getStatusIcon(booking.status)" class="h-4 w-4" />
                                 <div>
-                                    <p class="text-sm font-medium" v-if="booking.user">
-                                        {{ booking.user.name }}
+                                    <p class="text-sm font-medium">
+                                        {{ booking.client_name }}
                                     </p>
                                     <p class="text-xs text-muted-foreground">
                                         {{ formatDate(booking.booking_date) }} at {{ formatTime(booking.start_time) }}
@@ -308,19 +274,19 @@
                 <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     <div v-for="(summary, dayKey) in availabilitySummary" :key="dayKey" class="rounded-lg border p-3">
                         <h4 class="mb-2 text-sm font-medium">{{ summary.day }}</h4>
-                        <div v-if="summary.periods.length === 0" class="text-xs text-muted-foreground">No availability</div>
+                        <div v-if="summary.availabilities.length === 0" class="text-xs text-muted-foreground">No availability</div>
                         <div v-else class="space-y-1">
                             <div
-                                v-for="(period, index) in summary.periods"
+                                v-for="(availability, index) in summary.availabilities"
                                 :key="index"
                                 class="rounded p-1 text-xs"
                                 :class="
-                                    period.is_active
+                                    availability.is_active
                                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                         : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                                 "
                             >
-                                {{ period.time_range }}
+                                {{ availability.time_range }}
                             </div>
                         </div>
                     </div>

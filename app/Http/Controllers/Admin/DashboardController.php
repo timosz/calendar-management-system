@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AvailabilityPeriod;
+use App\Models\Availability;
 use App\Models\Booking;
-use App\Models\UnavailablePeriod;
+use App\Models\Restriction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,30 +27,30 @@ class DashboardController extends Controller
 
         // Basic statistics
         $stats = [
-            'total_bookings' => Booking::forUser($userId)->count(),
-            'pending_bookings' => Booking::forUser($userId)->pending()->count(),
-            'confirmed_bookings' => Booking::forUser($userId)->confirmed()->count(),
-            'this_week_bookings' => Booking::forUser($userId)
-                ->betweenDates($startOfWeek->toDateString(), $endOfWeek->toDateString())
+            'total_bookings' => Booking::where('user_id', $userId)->count(),
+            'pending_bookings' => Booking::where('user_id', $userId)->where('status', 'pending')->count(),
+            'confirmed_bookings' => Booking::where('user_id', $userId)->where('status', 'confirmed')->count(),
+            'this_week_bookings' => Booking::where('user_id', $userId)
+                ->whereBetween('booking_date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
                 ->count(),
-            'this_month_bookings' => Booking::forUser($userId)
-                ->betweenDates($startOfMonth->toDateString(), $endOfMonth->toDateString())
+            'this_month_bookings' => Booking::where('user_id', $userId)
+                ->whereBetween('booking_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
                 ->count(),
-            'active_availability_periods' => AvailabilityPeriod::forUser($userId)->active()->count(),
-            'current_unavailable_periods' => UnavailablePeriod::forUser($userId)
-                ->activeOnDate($today->toDateString())
+            'active_availabilities' => Availability::where('user_id', $userId)->where('is_active', true)->count(),
+            'current_restrictions' => Restriction::where('user_id', $userId)
+                ->where('start_date', '<=', $today->toDateString())
+                ->where('end_date', '>=', $today->toDateString())
                 ->count(),
         ];
 
         // Recent bookings
-        $recentBookings = Booking::forUser($userId)
-            ->with('user')
+        $recentBookings = Booking::where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
         // Upcoming bookings
-        $upcomingBookings = Booking::forUser($userId)
+        $upcomingBookings = Booking::where('user_id', $userId)
             ->where('booking_date', '>=', $today->toDateString())
             ->whereIn('status', ['pending', 'confirmed'])
             ->orderBy('booking_date', 'asc')
@@ -59,19 +59,20 @@ class DashboardController extends Controller
             ->get();
 
         // Today's bookings
-        $todaysBookings = Booking::forUser($userId)
-            ->forDate($today->toDateString())
+        $todaysBookings = Booking::where('user_id', $userId)
+            ->where('booking_date', $today->toDateString())
             ->whereIn('status', ['pending', 'confirmed'])
             ->orderBy('start_time', 'asc')
             ->get();
 
-        // Current unavailable periods
-        $currentUnavailablePeriods = UnavailablePeriod::forUser($userId)
-            ->activeOnDate($today->toDateString())
+        // Current restrictions
+        $currentRestrictions = Restriction::where('user_id', $userId)
+            ->where('start_date', '<=', $today->toDateString())
+            ->where('end_date', '>=', $today->toDateString())
             ->get();
 
         // Booking status distribution for chart
-        $statusDistribution = Booking::forUser($userId)
+        $statusDistribution = Booking::where('user_id', $userId)
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->get()
@@ -85,8 +86,8 @@ class DashboardController extends Controller
             $weekStart = $today->copy()->subWeeks($i)->startOfWeek();
             $weekEnd = $weekStart->copy()->endOfWeek();
 
-            $count = Booking::forUser($userId)
-                ->betweenDates($weekStart->toDateString(), $weekEnd->toDateString())
+            $count = Booking::where('user_id', $userId)
+                ->whereBetween('booking_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
                 ->count();
 
             $weeklyTrend[] = [
@@ -103,8 +104,8 @@ class DashboardController extends Controller
 
             // Only include months up to current month
             if ($monthStart->lte($today)) {
-                $count = Booking::forUser($userId)
-                    ->betweenDates($monthStart->toDateString(), $monthEnd->toDateString())
+                $count = Booking::where('user_id', $userId)
+                    ->whereBetween('booking_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
                     ->count();
 
                 $monthlyStats[] = [
@@ -115,19 +116,19 @@ class DashboardController extends Controller
         }
 
         // Availability summary
-        $availabilitySummary = AvailabilityPeriod::forUser($userId)
-            ->active()
+        $availabilitySummary = Availability::where('user_id', $userId)
+            ->where('is_active', true)
             ->orderBy('day_of_week')
             ->orderBy('start_time')
             ->get()
             ->groupBy('day_of_week')
-            ->map(function ($periods, $day) {
+            ->map(function ($availabilities, $day) {
                 return [
                     'day' => $this->getDayName($day),
-                    'periods' => $periods->map(function ($period) {
+                    'availabilities' => $availabilities->map(function ($availability) {
                         return [
-                            'time_range' => $period->time_range,
-                            'is_active' => $period->is_active,
+                            'time_range' => $availability->start_time->format('H:i') . ' - ' . $availability->end_time->format('H:i'),
+                            'is_active' => $availability->is_active,
                         ];
                     }),
                 ];
@@ -138,7 +139,7 @@ class DashboardController extends Controller
             'recentBookings' => $recentBookings,
             'upcomingBookings' => $upcomingBookings,
             'todaysBookings' => $todaysBookings,
-            'currentUnavailablePeriods' => $currentUnavailablePeriods,
+            'currentRestrictions' => $currentRestrictions,
             'statusDistribution' => $statusDistribution,
             'weeklyTrend' => $weeklyTrend,
             'monthlyStats' => $monthlyStats,
