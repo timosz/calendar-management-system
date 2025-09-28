@@ -8,6 +8,7 @@
         timeSlots: TimeSlot[];
         placeholder?: string;
         hasError?: boolean;
+        dataTest?: string;
     }
 
     defineProps<Props>();
@@ -18,8 +19,12 @@
 </script>
 
 <template>
-    <Select :disabled="disabled" :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
-        <SelectTrigger :class="{ 'border-destructive': hasError }">
+    <Select 
+        :disabled="disabled" 
+        :model-value="modelValue" 
+        @update:model-value="$emit('update:modelValue', $event)"
+    >
+        <SelectTrigger :data-test="dataTest" :class="{ 'border-destructive': hasError }">
             <SelectValue :placeholder="placeholder" />
         </SelectTrigger>
         <SelectContent class="max-h-60 overflow-y-auto">

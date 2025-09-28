@@ -73,6 +73,7 @@
                 :time-slots="timeSlots"
                 :has-error="!!errors?.start_time"
                 placeholder="Start time"
+                :data-test="`day-${availability.day_of_week}-start-time`"
                 @update:model-value="(value) => emits('update-start-time', value)"
             />
             <div v-if="errors?.start_time" class="mt-1 text-xs text-destructive">
@@ -89,6 +90,7 @@
                 :time-slots="filteredEndTimeSlots"
                 :has-error="!!errors?.end_time"
                 placeholder="End time"
+                :data-test="`day-${availability.day_of_week}-end-time`"
                 @update:model-value="(value) => emits('update-end-time', value)"
             />
             <div v-if="errors?.end_time" class="mt-1 text-xs text-destructive">
