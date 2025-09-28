@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Availability;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,146 +16,141 @@ class AvailabilityController extends Controller
 {
     public function index(): Response
     {
+        // Get all availabilities for the authenticated user, indexed by day_of_week
         $availabilities = Auth::user()
             ->availabilities()
-            ->orderBy('day_of_week')
             ->get()
-            ->map(function ($availability) {
-                return [
-                    'id' => $availability->id,
-                    'day_of_week' => $availability->day_of_week,
-                    'day_name' => $availability->day_name,
-                    'start_time' => $availability->start_time->format('H:i'),
-                    'end_time' => $availability->end_time->format('H:i'),
-                    'is_active' => $availability->is_active,
-                    'duration_minutes' => $availability->getDurationInMinutes(),
-                ];
-            });
+            ->keyBy('day_of_week');
+
+        // Prepare the weekly schedule data
+        $weeklySchedule = [];
+        $dayNames = Availability::getDayNames();
+
+        // Start from Monday (1) and include Sunday (0) at the end
+        $dayOrder = [1, 2, 3, 4, 5, 6, 0];
+
+        foreach ($dayOrder as $dayNumber) {
+            $availability = $availabilities->get($dayNumber);
+
+            $weeklySchedule[] = [
+                'day_of_week' => $dayNumber,
+                'day_name' => $dayNames[$dayNumber],
+                'is_active' => $availability ? $availability->is_active : false,
+                'start_time' => $availability ? $availability->start_time->format('H:i') : null,
+                'end_time' => $availability ? $availability->end_time->format('H:i') : null,
+                'id' => $availability ? $availability->id : null,
+            ];
+        }
 
         return Inertia::render('Admin/Availabilities/Index', [
-            'availabilities' => $availabilities,
-            'dayNames' => Availability::getDayNames(),
+            'weeklySchedule' => $weeklySchedule,
+            'timeSlots' => $this->generateTimeSlots(),
         ]);
     }
 
-    public function create(): Response
-    {
-        // Get days that don't have availability yet
-        $existingDays = Auth::user()
-            ->availabilities()
-            ->pluck('day_of_week')
-            ->toArray();
-
-        $availableDays = collect(Availability::getDayNames())
-            ->filter(function ($dayName, $dayNumber) use ($existingDays) {
-                return !in_array($dayNumber, $existingDays);
-            });
-
-        return Inertia::render('Admin/Availabilities/Create', [
-            'availableDays' => $availableDays,
-        ]);
-    }
-
-    public function store(Request $request): RedirectResponse
+    public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'day_of_week' => [
-                'required',
-                'integer',
-                'between:0,6',
-                Rule::unique('availabilities')->where(function ($query) {
-                    return $query->where('user_id', Auth::id());
-                }),
-            ],
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'is_active' => 'boolean',
+            'availabilities' => 'required|array',
+            'availabilities.*.day_of_week' => 'required|integer|between:0,6',
+            'availabilities.*.is_active' => 'required|boolean',
+            'availabilities.*.start_time' => 'nullable|date_format:H:i|required_if:availabilities.*.is_active,true',
+            'availabilities.*.end_time' => 'nullable|date_format:H:i|required_if:availabilities.*.is_active,true|after:availabilities.*.start_time',
+        ], [
+            'availabilities.*.start_time.required_if' => 'Start time is required when day is active.',
+            'availabilities.*.end_time.required_if' => 'End time is required when day is active.',
+            'availabilities.*.end_time.after' => 'End time must be after start time.',
         ]);
 
-        Auth::user()->availabilities()->create($validated);
+        DB::transaction(function () use ($validated) {
+            $userId = Auth::id();
+
+            foreach ($validated['availabilities'] as $availabilityData) {
+                $dayOfWeek = $availabilityData['day_of_week'];
+
+                // Find existing availability for this day
+                $availability = Availability::where('user_id', $userId)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->first();
+
+                if ($availabilityData['is_active']) {
+                    // Create or update availability
+                    $data = [
+                        'user_id' => $userId,
+                        'day_of_week' => $dayOfWeek,
+                        'start_time' => $availabilityData['start_time'],
+                        'end_time' => $availabilityData['end_time'],
+                        'is_active' => true,
+                    ];
+
+                    if ($availability) {
+                        $availability->update($data);
+                    } else {
+                        Availability::create($data);
+                    }
+                } else {
+                    // If not active, delete the availability if it exists
+                    if ($availability) {
+                        $availability->delete();
+                    }
+                }
+            }
+        });
 
         return redirect()
             ->route('admin.availabilities.index')
-            ->with('success', 'Availability created successfully.');
-    }
-
-    public function show(Availability $availability): Response
-    {
-        return Inertia::render('Admin/Availabilities/Show', [
-            'availability' => [
-                'id' => $availability->id,
-                'day_of_week' => $availability->day_of_week,
-                'day_name' => $availability->day_name,
-                'start_time' => $availability->start_time->format('H:i'),
-                'end_time' => $availability->end_time->format('H:i'),
-                'is_active' => $availability->is_active,
-                'duration_minutes' => $availability->getDurationInMinutes(),
-                'created_at' => $availability->created_at,
-                'updated_at' => $availability->updated_at,
-            ],
-        ]);
-    }
-
-    public function edit(Availability $availability): Response
-    {
-        return Inertia::render('Admin/Availabilities/Edit', [
-            'availability' => [
-                'id' => $availability->id,
-                'day_of_week' => $availability->day_of_week,
-                'day_name' => $availability->day_name,
-                'start_time' => $availability->start_time->format('H:i'),
-                'end_time' => $availability->end_time->format('H:i'),
-                'is_active' => $availability->is_active,
-            ],
-            'dayNames' => Availability::getDayNames(),
-        ]);
-    }
-
-    public function update(Request $request, Availability $availability): RedirectResponse
-    {
-        $validated = $request->validate([
-            'day_of_week' => [
-                'required',
-                'integer',
-                'between:0,6',
-                Rule::unique('availabilities')->where(function ($query) {
-                    return $query->where('user_id', Auth::id());
-                })->ignore($availability->id),
-            ],
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'is_active' => 'boolean',
-        ]);
-
-        $availability->update($validated);
-
-        return redirect()
-            ->route('admin.availabilities.index')
-            ->with('success', 'Availability updated successfully.');
-    }
-
-    public function destroy(Availability $availability): RedirectResponse
-    {
-        $availability->delete();
-
-        return redirect()
-            ->route('admin.availabilities.index')
-            ->with('success', 'Availability deleted successfully.');
+            ->with('success', 'Weekly availability updated successfully.');
     }
 
     /**
-     * Toggle active status of availability
+     * Generate time slots in 15-minute intervals
      */
-    public function toggleActive(Availability $availability): RedirectResponse
+    private function generateTimeSlots(): array
     {
-        $availability->update([
-            'is_active' => !$availability->is_active,
+        $timeSlots = [];
+
+        for ($hour = 0; $hour < 24; $hour++) {
+            for ($minute = 0; $minute < 60; $minute += 15) {
+                $time = sprintf('%02d:%02d', $hour, $minute);
+                $timeSlots[] = [
+                    'value' => $time,
+                    'label' => $time,
+                ];
+            }
+        }
+
+        return $timeSlots;
+    }
+
+    /**
+     * Toggle active status for a specific day
+     */
+    public function toggleDay(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'day_of_week' => 'required|integer|between:0,6',
         ]);
 
-        $status = $availability->is_active ? 'activated' : 'deactivated';
+        $availability = Auth::user()
+            ->availabilities()
+            ->where('day_of_week', $validated['day_of_week'])
+            ->first();
+
+        if ($availability) {
+            $availability->update([
+                'is_active' => !$availability->is_active,
+            ]);
+
+            $status = $availability->is_active ? 'activated' : 'deactivated';
+            $dayName = $availability->day_name;
+
+            return redirect()
+                ->route('admin.availabilities.index')
+                ->with('success', "{$dayName} availability {$status} successfully.");
+        }
 
         return redirect()
             ->route('admin.availabilities.index')
-            ->with('success', "Availability {$status} successfully.");
+            ->with('error', 'No availability found for this day.');
     }
 }

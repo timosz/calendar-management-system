@@ -11,9 +11,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Availabilities
-    Route::resource('availabilities', AvailabilityController::class);
-    Route::patch('availabilities/{availability}/toggle-active', [AvailabilityController::class, 'toggleActive'])
-        ->name('availabilities.toggle-active');
+    Route::get('availabilities', [AvailabilityController::class, 'index'])->name('availabilities.index');
+    Route::put('availabilities', [AvailabilityController::class, 'update'])->name('availabilities.update');
+    Route::post('availabilities/toggle-day', [AvailabilityController::class, 'toggleDay'])->name('availabilities.toggle-day');
 
     // Restrictions
     Route::resource('restrictions', RestrictionController::class);
