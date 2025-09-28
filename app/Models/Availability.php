@@ -90,6 +90,15 @@ class Availability extends Model
         $start = \Carbon\Carbon::parse($this->start_time);
         $end = \Carbon\Carbon::parse($this->end_time);
 
-        return $end->diffInMinutes($start);
+        // ensure we always return a non-negative value
+        return abs($end->diffInMinutes($start));
+    }
+
+    /**
+     * Get duration in hours
+     */
+    public function getDurationInHours(): float
+    {
+        return $this->getDurationInMinutes() / 60;
     }
 }
