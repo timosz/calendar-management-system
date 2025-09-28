@@ -19,11 +19,7 @@
 </script>
 
 <template>
-    <Select 
-        :disabled="disabled" 
-        :model-value="modelValue" 
-        @update:model-value="$emit('update:modelValue', $event)"
-    >
+    <Select :disabled="disabled" :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
         <SelectTrigger :data-test="dataTest" :class="{ 'border-destructive': hasError }">
             <SelectValue :placeholder="placeholder" />
         </SelectTrigger>
