@@ -140,3 +140,18 @@ export interface DashboardPageProps {
     currentDate: string;
     currentTime: string;
 }
+
+// Availability Management Types
+export interface TimeSlot {
+    value: string;
+    label: string;
+}
+
+export interface WeeklyScheduleItem {
+    day_of_week: number;
+    day_name: string;
+    is_active: boolean;
+    start_time: string | null;
+    end_time: string | null;
+    id: number | null;
+}
