@@ -41,8 +41,57 @@ export const useTimeUtils = () => {
         return dayjs.duration(end.diff(start)).asHours();
     };
 
+    /**
+     * Format time string to 12-hour format with AM/PM
+     */
+    const formatTime = (time: string | null): string | null => {
+        if (!time) return null;
+        return dayjs(`${BASE_DATE}T${time}`).format('h:mm A');
+    };
+
+    /**
+     * Format date string to readable format
+     */
+    const formatDate = (date: string): string => {
+        return dayjs(date).format('MMM D, YYYY');
+    };
+
+    /**
+     * Format date string to short format (no year if current year)
+     */
+    const formatDateShort = (date: string): string => {
+        const d = dayjs(date);
+        const isCurrentYear = d.year() === dayjs().year();
+        return d.format(isCurrentYear ? 'MMM D' : 'MMM D, YYYY');
+    };
+
+    /**
+     * Format date range
+     */
+    const formatDateRange = (startDate: string, endDate: string): string => {
+        if (startDate === endDate) {
+            return formatDate(startDate);
+        }
+        return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    };
+
+    /**
+     * Format time range
+     */
+    const formatTimeRange = (startTime: string | null, endTime: string | null, allDay: boolean = false): string => {
+        if (allDay || (!startTime && !endTime)) {
+            return 'All Day';
+        }
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
+    };
+
     return {
         formatDuration,
         calculateHoursBetween,
+        formatTime,
+        formatDate,
+        formatDateShort,
+        formatDateRange,
+        formatTimeRange,
     };
 };
