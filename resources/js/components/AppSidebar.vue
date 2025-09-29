@@ -3,12 +3,12 @@
     import NavMain from '@/components/NavMain.vue';
     import NavUser from '@/components/NavUser.vue';
     import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-    import { dashboard } from '@/routes/admin'; // Import from admin routes
-    import { index as availabilitiesIndex } from '@/routes/admin/availabilities'; // Import availability periods route
-    import { index as restrictionsIndex } from '@/routes/admin/restrictions'; // Import availability periods route
+    import { dashboard } from '@/routes/admin';
+    import { index as availabilitiesIndex } from '@/routes/admin/availabilities';
+    import { index as restrictionsIndex } from '@/routes/admin/restrictions';
     import { NavItem } from '@/types';
     import { Link } from '@inertiajs/vue3';
-    import { Calendar, Clock, LayoutDashboard } from 'lucide-vue-next';
+    import { Calendar, CalendarOff, Clock, LayoutDashboard } from 'lucide-vue-next';
     import AppLogo from './AppLogo.vue';
 
     const mainNavItems: NavItem[] = [
@@ -25,7 +25,7 @@
         {
             title: 'Restrictions',
             href: restrictionsIndex(),
-            icon: Clock,
+            icon: CalendarOff,
         },
     ];
 
