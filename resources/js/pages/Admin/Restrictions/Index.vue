@@ -254,7 +254,7 @@
                                                 <Edit class="h-4 w-4" />
                                             </Link>
                                         </Button>
-                                        <Button variant="ghost" size="sm" @click="confirmDelete(restriction.id)">
+                                        <Button variant="ghost" data-test="delete-button" size="sm" @click="confirmDelete(restriction.id)">
                                             <Trash2 class="h-4 w-4" />
                                         </Button>
                                     </div>
