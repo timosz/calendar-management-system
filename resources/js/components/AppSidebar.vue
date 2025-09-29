@@ -5,6 +5,7 @@
     import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
     import { dashboard } from '@/routes/admin'; // Import from admin routes
     import { index as availabilitiesIndex } from '@/routes/admin/availabilities'; // Import availability periods route
+    import { index as restrictionsIndex } from '@/routes/admin/restrictions'; // Import availability periods route
     import { NavItem } from '@/types';
     import { Link } from '@inertiajs/vue3';
     import { Calendar, Clock, LayoutDashboard } from 'lucide-vue-next';
@@ -19,6 +20,11 @@
         {
             title: 'Availabilities',
             href: availabilitiesIndex(),
+            icon: Clock,
+        },
+        {
+            title: 'Restrictions',
+            href: restrictionsIndex(),
             icon: Clock,
         },
     ];
