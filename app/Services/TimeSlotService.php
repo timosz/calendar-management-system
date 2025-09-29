@@ -20,24 +20,11 @@ class TimeSlotService
             for ($minute = 0; $minute < 60; $minute += $intervalMinutes) {
                 $time = sprintf('%02d:%02d', $hour, $minute);
 
-                // Format label in 12-hour format with AM/PM
-                $period = $hour >= 12 ? 'PM' : 'AM';
-                $displayHour = $hour === 0 ? 12 : ($hour > 12 ? $hour - 12 : $hour);
-                $label = sprintf('%d:%02d %s', $displayHour, $minute, $period);
-
                 $timeSlots[] = [
                     'value' => $time,
-                    'label' => $label,
+                    'label' => $time,
                 ];
             }
-        }
-
-        // Add end time if it's 24:00
-        if ($endHour === 24) {
-            $timeSlots[] = [
-                'value' => '24:00',
-                'label' => '12:00 AM (Next Day)',
-            ];
         }
 
         return $timeSlots;
