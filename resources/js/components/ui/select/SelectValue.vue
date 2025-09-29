@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 interface SelectValueProps {
   placeholder?: string
   class?: HTMLAttributes['class']
-  options?: Array<{ value: any; label: string }> // Add options prop to find labels
+  options?: Array<{ value: any; label: string }>
 }
 
 const props = defineProps<SelectValueProps>()
@@ -15,7 +15,8 @@ const selectContext = inject('selectContext') as any
 const displayValue = computed(() => {
   const currentValue = selectContext.selectedValue.value
   
-  if (currentValue === undefined || currentValue === null) {
+  // Check for empty/null/undefined values
+  if (currentValue === undefined || currentValue === null || currentValue === '') {
     return props.placeholder || 'Select an option'
   }
   
@@ -30,7 +31,8 @@ const displayValue = computed(() => {
 })
 
 const hasValue = computed(() => {
-  return selectContext.selectedValue.value !== undefined && selectContext.selectedValue.value !== null
+  const currentValue = selectContext.selectedValue.value
+  return currentValue !== undefined && currentValue !== null && currentValue !== ''
 })
 </script>
 
