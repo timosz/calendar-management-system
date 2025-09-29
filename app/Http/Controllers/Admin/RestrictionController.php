@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Restriction;
+use App\Services\TimeSlotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -13,6 +14,11 @@ use Carbon\Carbon;
 
 class RestrictionController extends Controller
 {
+    public function __construct(
+        protected TimeSlotService $timeSlotService
+    ) {
+    }
+
     public function index(Request $request): Response
     {
         $query = Auth::user()->restrictions();
@@ -66,6 +72,7 @@ class RestrictionController extends Controller
     {
         return Inertia::render('Admin/Restrictions/Create', [
             'types' => Restriction::getTypes(),
+            'timeSlots' => $this->timeSlotService->generateTimeSlots(30), // 30-minute intervals for restrictions
         ]);
     }
 
@@ -122,6 +129,7 @@ class RestrictionController extends Controller
                 'type' => $restriction->type,
             ],
             'types' => Restriction::getTypes(),
+            'timeSlots' => $this->timeSlotService->generateTimeSlots(30),
         ]);
     }
 
@@ -175,12 +183,12 @@ class RestrictionController extends Controller
 
         // If all day restriction, all bookings in date range conflict
         if (empty($data['start_time']) && empty($data['end_time'])) {
-            throw new \Illuminate\Validation\ValidationException(
-                validator([], [])->errors()->add(
-                    'start_date',
-                    'This period conflicts with existing confirmed bookings.'
-                )
+            $validator = validator([], []);
+            $validator->errors()->add(
+                'start_date',
+                'This period conflicts with existing confirmed bookings.'
             );
+            throw new \Illuminate\Validation\ValidationException($validator);
         }
 
         // Check for time conflicts
@@ -195,12 +203,12 @@ class RestrictionController extends Controller
                 $bookingEnd = $booking->end_time->format('H:i');
 
                 if (!($bookingEnd <= $restrictionStart || $bookingStart >= $restrictionEnd)) {
-                    throw new \Illuminate\Validation\ValidationException(
-                        validator([], [])->errors()->add(
-                            'start_time',
-                            'This time period conflicts with an existing confirmed booking.'
-                        )
+                    $validator = validator([], []);
+                    $validator->errors()->add(
+                        'start_time',
+                        'This time period conflicts with an existing confirmed booking.'
                     );
+                    throw new \Illuminate\Validation\ValidationException($validator);
                 }
             }
         }

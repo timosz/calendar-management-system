@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Availability;
+use App\Services\TimeSlotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,11 @@ use Illuminate\Http\RedirectResponse;
 
 class AvailabilityController extends Controller
 {
+    public function __construct(
+        protected TimeSlotService $timeSlotService
+    ) {
+    }
+
     public function index(): Response
     {
         // Get all availabilities for the authenticated user, indexed by day_of_week
@@ -44,7 +50,7 @@ class AvailabilityController extends Controller
 
         return Inertia::render('Admin/Availabilities/Index', [
             'weeklySchedule' => $weeklySchedule,
-            'timeSlots' => $this->generateTimeSlots(),
+            'timeSlots' => $this->timeSlotService->generateTimeSlots(15),
         ]);
     }
 
@@ -100,26 +106,6 @@ class AvailabilityController extends Controller
         return redirect()
             ->route('admin.availabilities.index')
             ->with('success', 'Weekly availability updated successfully.');
-    }
-
-    /**
-     * Generate time slots in 15-minute intervals
-     */
-    private function generateTimeSlots(): array
-    {
-        $timeSlots = [];
-
-        for ($hour = 0; $hour < 24; $hour++) {
-            for ($minute = 0; $minute < 60; $minute += 15) {
-                $time = sprintf('%02d:%02d', $hour, $minute);
-                $timeSlots[] = [
-                    'value' => $time,
-                    'label' => $time,
-                ];
-            }
-        }
-
-        return $timeSlots;
     }
 
     /**
