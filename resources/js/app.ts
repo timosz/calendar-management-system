@@ -6,6 +6,7 @@ import { createPinia } from 'pinia';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { initializeTheme } from './composables/useAppearance';
+import vcalendarPlugin from './plugins/vcalendar';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -19,6 +20,7 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(pinia)
+            .use(vcalendarPlugin)
             .mount(el);
     },
     progress: {
