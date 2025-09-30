@@ -48,8 +48,8 @@ class RestrictionController extends Controller
                     'id' => $restriction->id,
                     'start_date' => $restriction->start_date->format('Y-m-d'),
                     'end_date' => $restriction->end_date->format('Y-m-d'),
-                    'start_time' => $restriction->start_time?->format('H:i'),
-                    'end_time' => $restriction->end_time?->format('H:i'),
+                    'start_time' => $restriction->start_time,
+                    'end_time' => $restriction->end_time,
                     'is_all_day' => $restriction->isAllDay(),
                     'reason' => $restriction->reason,
                     'type' => $restriction->type,
@@ -104,8 +104,8 @@ class RestrictionController extends Controller
                 'id' => $restriction->id,
                 'start_date' => $restriction->start_date->format('Y-m-d'),
                 'end_date' => $restriction->end_date->format('Y-m-d'),
-                'start_time' => $restriction->start_time?->format('H:i'),
-                'end_time' => $restriction->end_time?->format('H:i'),
+                'start_time' => $restriction->start_time,
+                'end_time' => $restriction->end_time,
                 'is_all_day' => $restriction->isAllDay(),
                 'reason' => $restriction->reason,
                 'type' => $restriction->type,
@@ -123,8 +123,8 @@ class RestrictionController extends Controller
                 'id' => $restriction->id,
                 'start_date' => $restriction->start_date->format('Y-m-d'),
                 'end_date' => $restriction->end_date->format('Y-m-d'),
-                'start_time' => $restriction->start_time?->format('H:i'),
-                'end_time' => $restriction->end_time?->format('H:i'),
+                'start_time' => $restriction->start_time,
+                'end_time' => $restriction->end_time,
                 'reason' => $restriction->reason,
                 'type' => $restriction->type,
             ],
@@ -199,8 +199,8 @@ class RestrictionController extends Controller
                 // Check time overlap
                 $restrictionStart = $data['start_time'];
                 $restrictionEnd = $data['end_time'];
-                $bookingStart = $booking->start_time->format('H:i');
-                $bookingEnd = $booking->end_time->format('H:i');
+                $bookingStart = $booking->start_time;
+                $bookingEnd = $booking->end_time;
 
                 if (!($bookingEnd <= $restrictionStart || $bookingStart >= $restrictionEnd)) {
                     $validator = validator([], []);

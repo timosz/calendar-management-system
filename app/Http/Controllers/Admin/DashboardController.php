@@ -127,7 +127,7 @@ class DashboardController extends Controller
                     'day' => $this->getDayName($day),
                     'availabilities' => $availabilities->map(function ($availability) {
                         return [
-                            'time_range' => $availability->start_time->format('H:i') . ' - ' . $availability->end_time->format('H:i'),
+                            'time_range' => $availability->start_time . ' - ' . $availability->end_time,
                             'is_active' => $availability->is_active,
                         ];
                     }),

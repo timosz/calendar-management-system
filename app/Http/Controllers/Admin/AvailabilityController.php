@@ -42,8 +42,8 @@ class AvailabilityController extends Controller
                 'day_of_week' => $dayNumber,
                 'day_name' => $dayNames[$dayNumber],
                 'is_active' => $availability ? $availability->is_active : false,
-                'start_time' => $availability ? $availability->start_time->format('H:i') : null,
-                'end_time' => $availability ? $availability->end_time->format('H:i') : null,
+                'start_time' => $availability ? $availability->start_time : null,
+                'end_time' => $availability ? $availability->end_time : null,
                 'id' => $availability ? $availability->id : null,
             ];
         }
