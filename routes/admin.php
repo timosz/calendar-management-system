@@ -19,10 +19,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::resource('restrictions', RestrictionController::class);
 
     // Bookings
+    Route::get('bookings/export', [BookingController::class, 'export'])->name('bookings.export');
     Route::resource('bookings', BookingController::class)->only(['index', 'show', 'destroy']);
     Route::patch('bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
     Route::patch('bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
     Route::patch('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     Route::patch('bookings/bulk-action', [BookingController::class, 'bulkAction'])->name('bookings.bulk-action');
-    Route::get('bookings/export', [BookingController::class, 'export'])->name('bookings.export');
 });
