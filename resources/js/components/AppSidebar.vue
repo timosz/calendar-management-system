@@ -5,6 +5,7 @@
     import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
     import { dashboard } from '@/routes/admin';
     import { index as availabilitiesIndex } from '@/routes/admin/availabilities';
+    import { index as bookingsIndex } from '@/routes/admin/bookings';
     import { index as restrictionsIndex } from '@/routes/admin/restrictions';
     import { NavItem } from '@/types';
     import { Link } from '@inertiajs/vue3';
@@ -26,6 +27,11 @@
             title: 'Restrictions',
             href: restrictionsIndex(),
             icon: CalendarOff,
+        },
+        {
+            title: 'Bookings',
+            href: bookingsIndex(),
+            icon: Calendar,
         },
     ];
 
