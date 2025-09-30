@@ -26,8 +26,6 @@ class Booking extends Model
 
     protected $casts = [
         'booking_date' => 'date',
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
     ];
 
     public function user(): BelongsTo
@@ -129,11 +127,8 @@ class Booking extends Model
      */
     public function conflictsWithTimeRange(string $startTime, string $endTime): bool
     {
-        $bookingStart = $this->start_time->format('H:i');
-        $bookingEnd = $this->end_time->format('H:i');
-
         // Booking conflicts if startTime is before bookingEnd and endTime is after bookingStart
-        return $startTime < $bookingEnd && $endTime > $bookingStart;
+        return $startTime < $this->end_time && $endTime > $this->start_time;
     }
 
     /**
@@ -147,8 +142,8 @@ class Booking extends Model
         }
 
         return $this->conflictsWithTimeRange(
-            $otherBooking->start_time->format('H:i'),
-            $otherBooking->end_time->format('H:i')
+            $otherBooking->start_time,
+            $otherBooking->end_time
         );
     }
 
@@ -165,8 +160,8 @@ class Booking extends Model
         }
 
         return $availability->coversTimeRange(
-            $this->start_time->format('H:i'),
-            $this->end_time->format('H:i')
+            $this->start_time,
+            $this->end_time
         );
     }
 
@@ -183,8 +178,8 @@ class Booking extends Model
         foreach ($restrictions as $restriction) {
             if ($restriction->conflictsWithTimeRange(
                 $this->booking_date,
-                $this->start_time->format('H:i'),
-                $this->end_time->format('H:i')
+                $this->start_time,
+                $this->end_time
             )) {
                 return true;
             }
