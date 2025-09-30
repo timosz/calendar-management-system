@@ -21,7 +21,7 @@
     import AppLayout from '@/layouts/AppLayout.vue';
     import type { PaginatedData, Restriction, RestrictionType } from '@/types';
     import { Head, Link, router, usePage } from '@inertiajs/vue3';
-    import { Calendar, Edit, Eye, Filter, Plus, Trash2 } from 'lucide-vue-next';
+    import { Calendar, Edit, Filter, Plus, Trash2 } from 'lucide-vue-next';
     import { computed, ref } from 'vue';
 
     interface Props {
@@ -244,11 +244,6 @@
                                 </TableCell>
                                 <TableCell class="text-right">
                                     <div class="flex justify-end gap-2">
-                                        <Button variant="ghost" size="sm" asChild>
-                                            <Link :href="`/admin/restrictions/${restriction.id}`">
-                                                <Eye class="h-4 w-4" />
-                                            </Link>
-                                        </Button>
                                         <Button variant="ghost" size="sm" asChild>
                                             <Link :href="`/admin/restrictions/${restriction.id}/edit`">
                                                 <Edit class="h-4 w-4" />
