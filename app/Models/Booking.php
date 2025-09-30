@@ -132,8 +132,8 @@ class Booking extends Model
         $bookingStart = $this->start_time->format('H:i');
         $bookingEnd = $this->end_time->format('H:i');
 
-        // Check for time overlap: conflict if NOT (end <= start OR start >= end)
-        return !($endTime <= $bookingStart || $startTime >= $bookingEnd);
+        // Booking conflicts if startTime is before bookingEnd and endTime is after bookingStart
+        return $startTime < $bookingEnd && $endTime > $bookingStart;
     }
 
     /**
