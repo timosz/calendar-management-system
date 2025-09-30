@@ -17,6 +17,15 @@ class BookingController extends Controller
     {
         $query = Auth::user()->bookings();
 
+        // Handle tab parameter
+        $tab = $request->input('tab', 'upcoming');
+
+        if ($tab === 'upcoming') {
+            $query->upcoming()->orderBy('booking_date')->orderBy('start_time');
+        } else {
+            $query->past()->orderBy('booking_date', 'desc')->orderBy('start_time', 'desc');
+        }
+
         // Filter by status if specified
         if ($request->filled('status')) {
             $query->status($request->status);
@@ -86,10 +95,10 @@ class BookingController extends Controller
             'bookings' => $bookings,
             'stats' => $stats,
             'filters' => [
+                'tab' => $tab,
                 'status' => $request->status,
                 'from_date' => $request->from_date,
                 'to_date' => $request->to_date,
-                'period' => $request->period,
             ],
             'statuses' => Booking::getStatuses(),
             'periods' => [
@@ -311,7 +320,7 @@ class BookingController extends Controller
         }
 
         $message = "Successfully processed {$successCount} booking(s).";
-        
+
         if (!empty($errors)) {
             $message .= ' Some bookings could not be processed: ' . implode(' ', $errors);
             return redirect()
