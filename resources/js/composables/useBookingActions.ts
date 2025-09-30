@@ -6,15 +6,35 @@ import {
     reject as bookingsReject,
     show as bookingsShow,
 } from '@/actions/App/Http/Controllers/Admin/BookingController';
-import { router } from '@inertiajs/vue3';
+import { useToast } from '@/composables/useToast';
+import { router, usePage } from '@inertiajs/vue3';
 
 export function useBookingActions() {
+    const { success, error } = useToast();
+    const page = usePage();
+
     const confirmBooking = (bookingId: number) => {
         router.patch(
             bookingsConfirm.url(bookingId),
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    const flashMessage = page.props.flash?.success;
+                    if (flashMessage) {
+                        success(flashMessage);
+                    }
+                },
+                onError: (errors) => {
+                    const flashError = page.props.flash?.error;
+                    if (flashError) {
+                        error(flashError);
+                    } else if (Object.keys(errors).length > 0) {
+                        const firstErrorKey = Object.keys(errors)[0];
+                        const firstErrorMessage = errors[firstErrorKey];
+                        error(Array.isArray(firstErrorMessage) ? firstErrorMessage[0] : firstErrorMessage);
+                    }
+                },
             },
         );
     };
@@ -25,6 +45,22 @@ export function useBookingActions() {
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    const flashMessage = page.props.flash?.success;
+                    if (flashMessage) {
+                        success(flashMessage);
+                    }
+                },
+                onError: (errors) => {
+                    const flashError = page.props.flash?.error;
+                    if (flashError) {
+                        error(flashError);
+                    } else if (Object.keys(errors).length > 0) {
+                        const firstErrorKey = Object.keys(errors)[0];
+                        const firstErrorMessage = errors[firstErrorKey];
+                        error(Array.isArray(firstErrorMessage) ? firstErrorMessage[0] : firstErrorMessage);
+                    }
+                },
             },
         );
     };
@@ -35,6 +71,22 @@ export function useBookingActions() {
             {},
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    const flashMessage = page.props.flash?.success;
+                    if (flashMessage) {
+                        success(flashMessage);
+                    }
+                },
+                onError: (errors) => {
+                    const flashError = page.props.flash?.error;
+                    if (flashError) {
+                        error(flashError);
+                    } else if (Object.keys(errors).length > 0) {
+                        const firstErrorKey = Object.keys(errors)[0];
+                        const firstErrorMessage = errors[firstErrorKey];
+                        error(Array.isArray(firstErrorMessage) ? firstErrorMessage[0] : firstErrorMessage);
+                    }
+                },
             },
         );
     };
@@ -43,6 +95,22 @@ export function useBookingActions() {
         if (confirm('Are you sure you want to delete this booking?')) {
             router.delete(bookingsDestroy.url(bookingId), {
                 preserveScroll: true,
+                onSuccess: () => {
+                    const flashMessage = page.props.flash?.success;
+                    if (flashMessage) {
+                        success(flashMessage);
+                    }
+                },
+                onError: (errors) => {
+                    const flashError = page.props.flash?.error;
+                    if (flashError) {
+                        error(flashError);
+                    } else if (Object.keys(errors).length > 0) {
+                        const firstErrorKey = Object.keys(errors)[0];
+                        const firstErrorMessage = errors[firstErrorKey];
+                        error(Array.isArray(firstErrorMessage) ? firstErrorMessage[0] : firstErrorMessage);
+                    }
+                },
             });
         }
     };
@@ -60,7 +128,23 @@ export function useBookingActions() {
             },
             {
                 preserveScroll: true,
-                onSuccess,
+                onSuccess: () => {
+                    const flashMessage = page.props.flash?.success;
+                    if (flashMessage) {
+                        success(flashMessage);
+                    }
+                    onSuccess?.();
+                },
+                onError: (errors) => {
+                    const flashError = page.props.flash?.error;
+                    if (flashError) {
+                        error(flashError);
+                    } else if (Object.keys(errors).length > 0) {
+                        const firstErrorKey = Object.keys(errors)[0];
+                        const firstErrorMessage = errors[firstErrorKey];
+                        error(Array.isArray(firstErrorMessage) ? firstErrorMessage[0] : firstErrorMessage);
+                    }
+                },
             },
         );
     };
