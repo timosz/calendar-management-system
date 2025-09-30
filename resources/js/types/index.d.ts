@@ -58,6 +58,61 @@ export interface Booking {
     updated_at: string;
 }
 
+export interface BookingIndexItem {
+    id: number;
+    client_name: string;
+    client_email: string;
+    client_phone: string | null;
+    booking_date: string;
+    booking_date_formatted: string;
+    start_time: string;
+    end_time: string;
+    duration_minutes: number;
+    status: BookingStatus;
+    status_label: string;
+    notes: string | null;
+    created_at: string;
+    can_be_confirmed: boolean;
+    can_be_rejected: boolean;
+    can_be_cancelled: boolean;
+}
+
+export interface BookingDetailItem extends BookingIndexItem {
+    booking_date_formatted: string; // Full format: "Monday, January 1, 2025"
+    google_calendar_event_id: string | null;
+    updated_at: string;
+    validation_errors: string[];
+    has_conflicts: boolean;
+}
+
+export interface BookingStats {
+    total: number;
+    pending: number;
+    confirmed: number;
+    rejected: number;
+    cancelled: number;
+    total_duration_minutes: number;
+}
+
+export interface BookingFilters {
+    status?: string;
+    from_date?: string;
+    to_date?: string;
+    period?: string;
+}
+
+export interface BookingsIndexPageProps extends AppPageProps {
+    bookings: PaginatedData<BookingIndexItem>;
+    stats: BookingStats;
+    filters: BookingFilters;
+    statuses: Record<string, string>;
+    periods: Record<string, string>;
+}
+
+export interface BookingsShowPageProps extends AppPageProps {
+    booking: BookingDetailItem;
+}
+
 export interface Availability {
     id: number;
     user_id: number;
