@@ -120,7 +120,8 @@ class Booking extends Model
         $start = Carbon::parse($this->start_time);
         $end = Carbon::parse($this->end_time);
 
-        return $end->diffInMinutes($start);
+        // always return a positive duration
+        return abs($end->diffInMinutes($start));
     }
 
     /**
