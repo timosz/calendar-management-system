@@ -13,8 +13,8 @@ beforeEach(function () {
         'password' => bcrypt('password'),
     ]);
 
-    // Helper function to find first available date and select it in v-calendar
-    $this->selectDateInCalendar = function ($page, $buttonSelector, $daysAhead = 0) {
+    // Helper function to select a date in vue-datepicker
+    $this->selectDateInCalendar = function ($page, $inputSelector, $daysAhead = 0) {
         // Find the first date without any bookings
         $today = now();
         $firstAvailableDate = null;
@@ -40,8 +40,8 @@ beforeEach(function () {
             $firstAvailableDate = $today->copy()->addMonths(6)->addDays($daysAhead);
         }
 
-        // Click the button to open the calendar
-        $page->click($buttonSelector)
+        // Click the input to open the calendar
+        $page->click($inputSelector)
             ->wait(0.5);
 
         // Calculate how many months to navigate forward
@@ -49,18 +49,17 @@ beforeEach(function () {
         $targetMonth = $firstAvailableDate->copy()->startOfMonth();
         $monthsToNavigate = $currentMonth->diffInMonths($targetMonth);
 
-        // Navigate to the correct month
+        // Navigate to the correct month using the next arrow
         for ($i = 0; $i < $monthsToNavigate; $i++) {
-            $page->click('button.vc-next')
+            $page->click('.dp__arrow_top, .dp__arrow_right')
                 ->wait(0.3);
         }
 
-        // Format the aria-label to match the calendar's format
-        // Example: "Wednesday, Oct 1, 2025"
-        $dayLabel = $firstAvailableDate->format('l, M j, Y');
+        // Format the data-test-id (e.g., "dp-2025-09-30")
+        $dataTestId = 'dp-' . $firstAvailableDate->format('Y-m-d');
 
-        // Click the target date
-        $page->click("div[aria-label*=\"{$dayLabel}\"]");
+        $page->click("[data-test-id=\"{$dataTestId}\"]")
+            ->wait(0.3);
 
         return $firstAvailableDate;
     };
@@ -76,11 +75,11 @@ describe('Restriction Interface', function () {
             ->click('type')
             ->click('Holiday');
 
-        // Select start date
-        $startDate = ($this->selectDateInCalendar)($page, 'label[for="start_date"] + button');
+        // Select start date - target the input field
+        $startDate = ($this->selectDateInCalendar)($page, 'input[placeholder*="start"]');
 
-        // Select end date (same as start date)
-        ($this->selectDateInCalendar)($page, 'label[for="end_date"] + button');
+        // Select end date
+        ($this->selectDateInCalendar)($page, 'input[placeholder*="end"]');
 
         $page->check('all_day')
             ->type('reason', 'Vacation week')
@@ -98,10 +97,10 @@ describe('Restriction Interface', function () {
             ->click('Break');
 
         // Select start date
-        ($this->selectDateInCalendar)($page, 'label[for="start_date"] + button');
+        ($this->selectDateInCalendar)($page, 'input[placeholder*="start"]');
 
-        // Select end date (same date)
-        ($this->selectDateInCalendar)($page, 'label[for="end_date"] + button');
+        // Select end date
+        ($this->selectDateInCalendar)($page, 'input[placeholder*="end"]');
 
         $page->click('div#start_time > button:first-child')
             ->click('text=12:00')
@@ -117,10 +116,10 @@ describe('Restriction Interface', function () {
 
         $page = visit('/admin/restrictions/create');
 
-        $page->click('Create Restriction')
-            ->assertSee('Select start date')
-            ->assertSee('Select end date')
-            ->assertSee('type');
+        $page->click('button[type="submit"]', 'Create Restriction')
+            ->wait(0.5)
+            ->assertSee('The start date field is required.')
+            ->assertSee('The end date field is required.');
     });
 
     it('shows all-day toggle behavior', function () {
@@ -176,10 +175,10 @@ describe('Restriction Interface', function () {
             ->assertValue('reason', 'Original reason');
 
         // Select new start date
-        $startDate = ($this->selectDateInCalendar)($page, 'label[for="start_date"] + button');
+        $startDate = ($this->selectDateInCalendar)($page, 'input[placeholder*="start"]');
 
         // Select new end date
-        $endDate = ($this->selectDateInCalendar)($page, 'label[for="end_date"] + button');
+        $endDate = ($this->selectDateInCalendar)($page, 'input[placeholder*="end"]');
 
         $page->type('reason', 'Updated reason')
             ->click('button[type="submit"]', 'Update Restriction')
