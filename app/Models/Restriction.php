@@ -78,8 +78,8 @@ class Restriction extends Model
             return true;
         }
 
-        // Check for time overlap: conflict if NOT (end <= start OR start >= end)
-        return !($endTime <= $this->start_time || $startTime >= $this->end_time);
+        // Ranges overlap if start is before restriction ends AND end is after restriction starts
+        return $startTime < $this->end_time && $endTime > $this->start_time;
     }
 
     /**
