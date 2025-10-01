@@ -127,8 +127,14 @@ class Booking extends Model
      */
     public function conflictsWithTimeRange(string $startTime, string $endTime): bool
     {
+        // Normalize times to H:i format for comparison
+        $bookingStart = Carbon::parse($this->start_time)->format('H:i');
+        $bookingEnd = Carbon::parse($this->end_time)->format('H:i');
+        $checkStart = Carbon::parse($startTime)->format('H:i');
+        $checkEnd = Carbon::parse($endTime)->format('H:i');
+
         // Booking conflicts if startTime is before bookingEnd and endTime is after bookingStart
-        return $startTime < $this->end_time && $endTime > $this->start_time;
+        return $checkStart < $bookingEnd && $checkEnd > $bookingStart;
     }
 
     /**
