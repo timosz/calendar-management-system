@@ -16,7 +16,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('availabilities/toggle-day', [AvailabilityController::class, 'toggleDay'])->name('availabilities.toggle-day');
 
     // Restrictions
-    Route::resource('restrictions', RestrictionController::class);
+    Route::resource('restrictions', RestrictionController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
     // Bookings
     Route::get('bookings/export', [BookingController::class, 'export'])->name('bookings.export');
