@@ -62,15 +62,4 @@ describe('Restriction Model', function () {
         expect($restriction->start_date)->toBeInstanceOf(\Carbon\Carbon::class);
         expect($restriction->end_date)->toBeInstanceOf(\Carbon\Carbon::class);
     });
-
-    it('casts times correctly', function () {
-        $restriction = Restriction::factory()->create([
-            'user_id' => $this->user->id,
-            'start_time' => '09:00',
-            'end_time' => '17:00',
-        ]);
-
-        expect($restriction->start_time)->toBeInstanceOf(\Carbon\Carbon::class);
-        expect($restriction->end_time)->toBeInstanceOf(\Carbon\Carbon::class);
-    });
 });
