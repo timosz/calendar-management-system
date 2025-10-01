@@ -97,25 +97,6 @@ class RestrictionController extends Controller
             ->with('success', 'Restriction created successfully.');
     }
 
-    public function show(Restriction $restriction): Response
-    {
-        return Inertia::render('Admin/Restrictions/Show', [
-            'restriction' => [
-                'id' => $restriction->id,
-                'start_date' => $restriction->start_date->format('Y-m-d'),
-                'end_date' => $restriction->end_date->format('Y-m-d'),
-                'start_time' => $restriction->start_time,
-                'end_time' => $restriction->end_time,
-                'is_all_day' => $restriction->isAllDay(),
-                'reason' => $restriction->reason,
-                'type' => $restriction->type,
-                'type_label' => Restriction::getTypes()[$restriction->type],
-                'created_at' => $restriction->created_at,
-                'updated_at' => $restriction->updated_at,
-            ],
-        ]);
-    }
-
     public function edit(Restriction $restriction): Response
     {
         return Inertia::render('Admin/Restrictions/Edit', [
@@ -123,8 +104,8 @@ class RestrictionController extends Controller
                 'id' => $restriction->id,
                 'start_date' => $restriction->start_date->format('Y-m-d'),
                 'end_date' => $restriction->end_date->format('Y-m-d'),
-                'start_time' => $restriction->start_time,
-                'end_time' => $restriction->end_time,
+                'start_time' => $restriction->start_time ? substr($restriction->start_time, 0, 5) : null, // Strip seconds
+                'end_time' => $restriction->end_time ? substr($restriction->end_time, 0, 5) : null, // Strip seconds
                 'reason' => $restriction->reason,
                 'type' => $restriction->type,
             ],
