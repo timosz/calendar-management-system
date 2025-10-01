@@ -83,16 +83,10 @@ class Restriction extends Model
     /**
      * Scope for restrictions affecting a date range
      */
-    public function scopeAffectingDateRange($query, Carbon $startDate, Carbon $endDate)
+    public function scopeAffectingDateRange($query, $startDate, $endDate)
     {
-        return $query->where(function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('start_date', [$startDate, $endDate])
-              ->orWhereBetween('end_date', [$startDate, $endDate])
-              ->orWhere(function ($q2) use ($startDate, $endDate) {
-                  $q2->where('start_date', '<=', $startDate)
-                     ->where('end_date', '>=', $endDate);
-              });
-        });
+        return $query->where('start_date', '<=', $endDate)
+                    ->where('end_date', '>=', $startDate);
     }
 
     /**
