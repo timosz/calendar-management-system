@@ -48,9 +48,11 @@ class AvailabilityService
 
         // Filter bookings for this specific date
         $dateBookings = $bookings
-            ? $bookings->where('booking_date', $date->toDateString())
+            ? $bookings->filter(function ($booking) use ($date) {
+                return $booking->booking_date->isSameDay($date);
+            })
             : $user->bookings()
-                ->where('booking_date', $date->toDateString())
+                ->whereDate('booking_date', $date->toDateString())
                 ->confirmed()
                 ->get();
 
@@ -153,7 +155,10 @@ class AvailabilityService
             ])
             ->confirmed()
             ->get()
-            ->groupBy('booking_date');
+            ->groupBy(function ($booking) {
+                // Group by the string format of the date
+                return $booking->booking_date->toDateString();
+            });
 
         // Process each day
         $slots = [];
