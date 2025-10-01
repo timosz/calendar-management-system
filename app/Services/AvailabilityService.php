@@ -6,21 +6,27 @@ use App\Models\User;
 use App\Models\Booking;
 use App\Models\Restriction;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class AvailabilityService
 {
     /**
      * Get available slots for a specific date
      */
-    public function getAvailableSlotsForDate(User $user, Carbon $date, bool $showUnavailable = true): array
-    {
+    public function getAvailableSlotsForDate(
+        User $user,
+        Carbon $date,
+        bool $showUnavailable = true,
+        ?Collection $availabilities = null,
+        ?Collection $restrictions = null,
+        ?Collection $bookings = null
+    ): array {
         $dayOfWeek = $date->dayOfWeek;
 
-        // Get the availability for this day
-        $availability = $user->availabilities()
-            ->active()
-            ->forDay($dayOfWeek)
-            ->first();
+        // Get the availability for this day from provided collection or query
+        $availability = $availabilities
+            ? $availabilities->firstWhere('day_of_week', $dayOfWeek)
+            : $user->availabilities()->active()->forDay($dayOfWeek)->first();
 
         // If no availability for this day, return empty
         if (!$availability) {
@@ -35,24 +41,26 @@ class AvailabilityService
             config('booking.slot_duration_minutes')
         );
 
-        // Get restrictions for this date
-        $restrictions = $user->restrictions()
-            ->affectingDateRange($date, $date)
-            ->get();
+        // Filter restrictions for this specific date
+        $dateRestrictions = $restrictions
+            ? $restrictions->filter(fn ($r) => $r->affectsDate($date))
+            : $user->restrictions()->affectingDateRange($date, $date)->get();
 
-        // Get confirmed bookings for this date
-        $confirmedBookings = $user->bookings()
-            ->where('booking_date', $date->toDateString())
-            ->confirmed()
-            ->get();
+        // Filter bookings for this specific date
+        $dateBookings = $bookings
+            ? $bookings->where('booking_date', $date->toDateString())
+            : $user->bookings()
+                ->where('booking_date', $date->toDateString())
+                ->confirmed()
+                ->get();
 
         // Mark slots as available/unavailable
-        $processedSlots = array_map(function ($slot) use ($date, $restrictions, $confirmedBookings) {
+        $processedSlots = array_map(function ($slot) use ($date, $dateRestrictions, $dateBookings) {
             $startTime = $slot['start_time'];
             $endTime = $slot['end_time'];
 
             // Check if slot conflicts with any restriction
-            foreach ($restrictions as $restriction) {
+            foreach ($dateRestrictions as $restriction) {
                 if ($restriction->conflictsWithTimeRange($date, $startTime, $endTime)) {
                     return [
                         'start_time' => $startTime,
@@ -64,7 +72,7 @@ class AvailabilityService
             }
 
             // Check if slot conflicts with any confirmed booking
-            foreach ($confirmedBookings as $booking) {
+            foreach ($dateBookings as $booking) {
                 if ($booking->conflictsWithTimeRange($startTime, $endTime)) {
                     return [
                         'start_time' => $startTime,
@@ -122,12 +130,33 @@ class AvailabilityService
     }
 
     /**
-     * Get available slots for a week
+     * Get available slots for a week (OPTIMIZED VERSION)
      */
     public function getAvailableSlotsForWeek(User $user, Carbon $startOfWeek, bool $showUnavailable = true): array
     {
-        $slots = [];
+        $endOfWeek = $startOfWeek->copy()->addDays(6);
 
+        // Eager load all data needed for the entire week in 3 queries
+        $availabilities = $user->availabilities()
+            ->active()
+            ->get()
+            ->keyBy('day_of_week');
+
+        $restrictions = $user->restrictions()
+            ->affectingDateRange($startOfWeek, $endOfWeek)
+            ->get();
+
+        $bookings = $user->bookings()
+            ->whereBetween('booking_date', [
+                $startOfWeek->toDateString(),
+                $endOfWeek->toDateString()
+            ])
+            ->confirmed()
+            ->get()
+            ->groupBy('booking_date');
+
+        // Process each day
+        $slots = [];
         for ($i = 0; $i < 7; $i++) {
             $date = $startOfWeek->copy()->addDays($i);
 
@@ -140,9 +169,19 @@ class AvailabilityService
                 continue;
             }
 
+            // Get bookings for this specific date from the pre-loaded collection
+            $dateBookings = $bookings->get($date->toDateString(), collect());
+
             $slots[] = [
                 'date' => $date->toDateString(),
-                'slots' => $this->getAvailableSlotsForDate($user, $date, $showUnavailable),
+                'slots' => $this->getAvailableSlotsForDate(
+                    $user,
+                    $date,
+                    $showUnavailable,
+                    $availabilities,
+                    $restrictions,
+                    $dateBookings
+                ),
             ];
         }
 
