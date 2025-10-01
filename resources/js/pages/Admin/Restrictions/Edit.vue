@@ -63,7 +63,14 @@
     };
 
     const submit = () => {
-        form.put(`/admin/restrictions/${props.restriction.id}`, {
+        // Convert empty strings to null before submission
+        const data = {
+            ...form.data(),
+            start_time: form.start_time || null,
+            end_time: form.end_time || null,
+        };
+
+        form.transform(() => data).put(`/admin/restrictions/${props.restriction.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 const flashMessage = page.props.flash?.success;
