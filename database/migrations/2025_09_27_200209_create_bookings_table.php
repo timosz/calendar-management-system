@@ -21,9 +21,12 @@ return new class () extends Migration {
             $table->string('google_calendar_event_id')->nullable(); // For integration with Google Calendar
             $table->timestamps();
 
-            $table->index(['user_id', 'booking_date']);
-            $table->index(['status']);
-            $table->index(['booking_date', 'start_time', 'end_time']);
+            // Optimize performance for single-user systems
+            $table->index(['status', 'booking_date'], 'idx_status_date');
+            // For multi-user systems
+            // $table->index(['user_id', 'status', 'booking_date'], 'idx_user_status_date');
+
+            $table->index(['booking_date', 'start_time', 'end_time'], 'idx_time_conflict');
         });
     }
 
