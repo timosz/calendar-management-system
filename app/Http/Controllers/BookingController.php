@@ -106,7 +106,7 @@ class BookingController extends Controller
         // TODO: Send confirmation email to client
 
         return redirect()
-            ->route('booking')
+            ->route('home')
             ->with('success', 'Your booking request has been submitted. You will receive a confirmation email once it is approved.');
     }
 }
