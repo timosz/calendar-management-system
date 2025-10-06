@@ -44,7 +44,6 @@
                 }
 
                 const events = await response.json();
-                console.log('Fetched events:', events);
                 successCallback(events);
             } catch (error) {
                 console.error('Error fetching events:', error);
@@ -74,7 +73,7 @@
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
+                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-950">
                     <div class="p-6">
                         <div class="mb-6">
                             <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Calendar</h2>
@@ -84,31 +83,31 @@
                         </div>
 
                         <!-- Legend -->
-                        <div class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
-                            <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Legend</h3>
+                        <div class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+                            <h3 class="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">Legend</h3>
                             <div class="flex flex-wrap gap-4 text-sm">
                                 <div class="flex items-center gap-2">
-                                    <div class="h-6 w-6 rounded border border-gray-300 dark:border-gray-600" style="background-color: #86efac"></div>
+                                    <div class="h-3 w-3 rounded-full bg-green-500"></div>
                                     <span class="text-gray-700 dark:text-gray-300">Available</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <div class="h-6 w-6 rounded border border-gray-300 dark:border-gray-600" style="background-color: #d1d5db"></div>
+                                    <div class="h-3 w-3 rounded-full bg-gray-400 dark:bg-gray-600"></div>
                                     <span class="text-gray-700 dark:text-gray-300">Restricted</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <div class="h-6 w-6 rounded border border-gray-300 dark:border-gray-600" style="background-color: #3b82f6"></div>
+                                    <div class="h-3 w-3 rounded-full bg-blue-500"></div>
                                     <span class="text-gray-700 dark:text-gray-300">Confirmed Booking</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <div class="h-6 w-6 rounded border border-gray-300 dark:border-gray-600" style="background-color: #f59e0b"></div>
+                                    <div class="h-3 w-3 rounded-full bg-orange-500"></div>
                                     <span class="text-gray-700 dark:text-gray-300">Pending Booking</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <div class="h-6 w-6 rounded border border-gray-300 dark:border-gray-600" style="background-color: #ef4444"></div>
+                                    <div class="h-3 w-3 rounded-full bg-red-500"></div>
                                     <span class="text-gray-700 dark:text-gray-300">Rejected Booking</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <div class="h-6 w-6 rounded border border-gray-300 dark:border-gray-600" style="background-color: #6b7280"></div>
+                                    <div class="h-3 w-3 rounded-full bg-gray-500"></div>
                                     <span class="text-gray-700 dark:text-gray-300">Cancelled Booking</span>
                                 </div>
                             </div>
@@ -129,20 +128,30 @@
     /* FullCalendar custom styles */
     :root {
         --fc-border-color: hsl(0 0% 92.8%);
-        --fc-button-bg-color: #3b82f6;
-        --fc-button-border-color: #3b82f6;
-        --fc-button-hover-bg-color: #2563eb;
-        --fc-button-hover-border-color: #2563eb;
-        --fc-button-active-bg-color: #1d4ed8;
-        --fc-button-active-border-color: #1d4ed8;
-        --fc-today-bg-color: #fef3c7;
+        --fc-button-bg-color: hsl(0 0% 96.1%);
+        --fc-button-border-color: hsl(0 0% 89.8%);
+        --fc-button-hover-bg-color: hsl(0 0% 92.1%);
+        --fc-button-hover-border-color: hsl(0 0% 85%);
+        --fc-button-active-bg-color: hsl(0 0% 9%);
+        --fc-button-active-border-color: hsl(0 0% 9%);
+        --fc-button-text-color: hsl(0 0% 3.9%);
+        --fc-button-active-text-color: hsl(0 0% 98%);
+        --fc-today-bg-color: hsl(0 0% 96.1%);
         --fc-neutral-bg-color: hsl(0 0% 100%);
         --fc-neutral-text-color: hsl(0 0% 3.9%);
     }
 
     .dark {
         --fc-border-color: hsl(0 0% 14.9%);
-        --fc-today-bg-color: hsl(43 74% 20%);
+        --fc-button-bg-color: hsl(0 0% 14.9%);
+        --fc-button-border-color: hsl(0 0% 14.9%);
+        --fc-button-hover-bg-color: hsl(0 0% 20%);
+        --fc-button-hover-border-color: hsl(0 0% 25%);
+        --fc-button-active-bg-color: hsl(0 0% 98%);
+        --fc-button-active-border-color: hsl(0 0% 98%);
+        --fc-button-text-color: hsl(0 0% 98%);
+        --fc-button-active-text-color: hsl(0 0% 9%);
+        --fc-today-bg-color: hsl(0 0% 10%);
         --fc-neutral-bg-color: hsl(0 0% 3.9%);
         --fc-neutral-text-color: hsl(0 0% 98%);
     }
@@ -153,16 +162,20 @@
 
     .fc {
         font-family: inherit;
+        background-color: var(--fc-neutral-bg-color);
     }
 
-    /* Calendar title (month/week/day header) */
+    /* Calendar title */
     .fc .fc-toolbar-title {
         color: var(--fc-neutral-text-color);
+        font-weight: 600;
     }
 
-    /* Day headers (Mon, Tue, Wed, etc.) */
+    /* Day headers */
     .fc .fc-col-header-cell-cushion {
         color: var(--fc-neutral-text-color);
+        font-weight: 500;
+        padding: 8px 4px;
     }
 
     /* Day numbers in month view */
@@ -175,38 +188,59 @@
         color: var(--fc-neutral-text-color);
     }
 
-    /* Event text in month view (dots view) */
-    .fc .fc-daygrid-event-dot {
-        border-color: currentColor;
-    }
-
-    /* Background color for calendar */
-    .fc {
+    /* Background color for cells */
+    .fc .fc-daygrid-day,
+    .fc .fc-timegrid-slot {
         background-color: var(--fc-neutral-bg-color);
     }
 
-    /* Events should maintain their own colors */
+    /* Events styling */
     .fc-event {
         cursor: pointer;
+        border: none;
     }
 
     .fc-event:hover {
-        opacity: 0.9;
+        opacity: 0.85;
     }
 
-    /* Ensure buttons text is readable */
-    .fc .fc-button {
-        color: white;
+    /* Buttons */
+    .fc .fc-button-primary {
+        background-color: var(--fc-button-bg-color);
+        border-color: var(--fc-button-border-color);
+        color: var(--fc-button-text-color);
     }
 
-    /* Today's date in day grid */
+    .fc .fc-button-primary:hover {
+        background-color: var(--fc-button-hover-bg-color);
+        border-color: var(--fc-button-hover-border-color);
+        color: var(--fc-button-text-color);
+    }
+
+    .fc .fc-button-primary:not(:disabled):active,
+    .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: var(--fc-button-active-bg-color);
+        border-color: var(--fc-button-active-border-color);
+        color: var(--fc-button-active-text-color);
+    }
+
+    /* Today's date highlight */
     .fc .fc-daygrid-day.fc-day-today {
+        background-color: var(--fc-today-bg-color) !important;
+    }
+
+    .fc .fc-timegrid-col.fc-day-today {
         background-color: var(--fc-today-bg-color);
     }
 
     /* All day slot label */
     .fc .fc-timegrid-axis-cushion {
         color: var(--fc-neutral-text-color);
+    }
+
+    /* Remove default box shadow on hover */
+    .fc .fc-daygrid-day:hover {
+        background-color: var(--fc-neutral-bg-color);
     }
 
     .fc-theme-standard th {
