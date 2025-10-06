@@ -6,6 +6,7 @@
     import { dashboard } from '@/routes/admin';
     import { index as availabilitiesIndex } from '@/routes/admin/availabilities';
     import { index as bookingsIndex } from '@/routes/admin/bookings';
+    import { index as calendarIndex } from '@/routes/admin/calendar';
     import { index as restrictionsIndex } from '@/routes/admin/restrictions';
     import { NavItem } from '@/types';
     import { Link } from '@inertiajs/vue3';
@@ -17,6 +18,11 @@
             title: 'Dashboard',
             href: dashboard(),
             icon: LayoutDashboard,
+        },
+        {
+            title: 'Calendar',
+            href: calendarIndex(),
+            icon: Calendar,
         },
         {
             title: 'Availabilities',
