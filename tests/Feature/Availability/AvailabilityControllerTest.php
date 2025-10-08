@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Availability\UpdateWeeklyAvailabilityAction;
 use App\Models\Availability;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -107,5 +108,16 @@ describe('AvailabilityController', function () {
             'availabilities.0.start_time',
             'availabilities.0.end_time',
         ]);
+    });
+
+    it('updates weekly availability', function () {
+        $user = User::factory()->create();
+        $action = new UpdateWeeklyAvailabilityAction();
+
+        $action->execute($user->id, [
+            ['day_of_week' => 1, 'is_active' => true, 'start_time' => '09:00', 'end_time' => '17:00'],
+        ]);
+
+        expect($user->availabilities()->count())->toBe(1);
     });
 });
