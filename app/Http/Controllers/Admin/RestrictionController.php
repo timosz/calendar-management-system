@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreRestrictionRequest;
+use App\Http\Requests\Admin\UpdateRestrictionRequest;
 use App\Models\Restriction;
 use App\Services\TimeSlotService;
 use Illuminate\Http\Request;
@@ -72,25 +74,13 @@ class RestrictionController extends Controller
     {
         return Inertia::render('Admin/Restrictions/Create', [
             'types' => Restriction::getTypes(),
-            'timeSlots' => $this->timeSlotService->generateTimeOptions(30), // 30-minute intervals for restrictions
+            'timeSlots' => $this->timeSlotService->generateTimeOptions(30),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreRestrictionRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'start_time' => 'nullable|date_format:H:i|required_with:end_time',
-            'end_time' => 'nullable|date_format:H:i|after:start_time|required_with:start_time',
-            'reason' => 'nullable|string|max:255',
-            'type' => 'required|in:' . implode(',', array_keys(Restriction::getTypes())),
-        ]);
-
-        // Check for conflicts with existing bookings
-        $this->checkForBookingConflicts($validated);
-
-        Auth::user()->restrictions()->create($validated);
+        Auth::user()->restrictions()->create($request->validated());
 
         return redirect()
             ->route('admin.restrictions.index')
@@ -104,8 +94,8 @@ class RestrictionController extends Controller
                 'id' => $restriction->id,
                 'start_date' => $restriction->start_date->format('Y-m-d'),
                 'end_date' => $restriction->end_date->format('Y-m-d'),
-                'start_time' => $restriction->start_time ? substr($restriction->start_time, 0, 5) : null, // Strip seconds
-                'end_time' => $restriction->end_time ? substr($restriction->end_time, 0, 5) : null, // Strip seconds
+                'start_time' => $restriction->start_time ? substr($restriction->start_time, 0, 5) : null,
+                'end_time' => $restriction->end_time ? substr($restriction->end_time, 0, 5) : null,
                 'reason' => $restriction->reason,
                 'type' => $restriction->type,
             ],
@@ -114,21 +104,9 @@ class RestrictionController extends Controller
         ]);
     }
 
-    public function update(Request $request, Restriction $restriction): RedirectResponse
+    public function update(UpdateRestrictionRequest $request, Restriction $restriction): RedirectResponse
     {
-        $validated = $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'start_time' => 'nullable|date_format:H:i|required_with:end_time',
-            'end_time' => 'nullable|date_format:H:i|after:start_time|required_with:start_time',
-            'reason' => 'nullable|string|max:255',
-            'type' => 'required|in:' . implode(',', array_keys(Restriction::getTypes())),
-        ]);
-
-        // Check for conflicts with existing bookings
-        $this->checkForBookingConflicts($validated, $restriction);
-
-        $restriction->update($validated);
+        $restriction->update($request->validated());
 
         return redirect()
             ->route('admin.restrictions.index')
@@ -142,56 +120,5 @@ class RestrictionController extends Controller
         return redirect()
             ->route('admin.restrictions.index')
             ->with('success', 'Restriction deleted successfully.');
-    }
-
-    /**
-     * Check for conflicts with existing confirmed bookings
-     */
-    private function checkForBookingConflicts(array $data, ?Restriction $excludeRestriction = null): void
-    {
-        $startDate = Carbon::parse($data['start_date']);
-        $endDate = Carbon::parse($data['end_date']);
-
-        $conflictingBookings = Auth::user()
-            ->bookings()
-            ->where('status', 'confirmed')
-            ->whereBetween('booking_date', [$startDate, $endDate])
-            ->get();
-
-        if ($conflictingBookings->isEmpty()) {
-            return;
-        }
-
-        // If all day restriction, all bookings in date range conflict
-        if (empty($data['start_time']) && empty($data['end_time'])) {
-            $validator = validator([], []);
-            $validator->errors()->add(
-                'start_date',
-                'This period conflicts with existing confirmed bookings.'
-            );
-            throw new \Illuminate\Validation\ValidationException($validator);
-        }
-
-        // Check for time conflicts
-        foreach ($conflictingBookings as $booking) {
-            $bookingDate = $booking->booking_date;
-
-            if ($bookingDate->between($startDate, $endDate)) {
-                // Check time overlap
-                $restrictionStart = $data['start_time'];
-                $restrictionEnd = $data['end_time'];
-                $bookingStart = $booking->start_time;
-                $bookingEnd = $booking->end_time;
-
-                if (!($bookingEnd <= $restrictionStart || $bookingStart >= $restrictionEnd)) {
-                    $validator = validator([], []);
-                    $validator->errors()->add(
-                        'start_time',
-                        'This time period conflicts with an existing confirmed booking.'
-                    );
-                    throw new \Illuminate\Validation\ValidationException($validator);
-                }
-            }
-        }
     }
 }
