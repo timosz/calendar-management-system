@@ -6,10 +6,10 @@ use App\Actions\Availability\BuildWeeklyScheduleAction;
 use App\Actions\Availability\ToggleDayAvailabilityAction;
 use App\Actions\Availability\UpdateWeeklyAvailabilityAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ToggleDayRequest;
 use App\Http\Requests\Admin\UpdateAvailabilitiesRequest;
 use App\Services\TimeSlotService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,15 +47,11 @@ class AvailabilityController extends Controller
     /**
      * Toggle active status for a specific day
      */
-    public function toggleDay(Request $request): RedirectResponse
+    public function toggleDay(ToggleDayRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'day_of_week' => 'required|integer|between:0,6',
-        ]);
-
         $result = $this->toggleDayAvailability->execute(
             Auth::id(),
-            $validated['day_of_week']
+            $request->getDayOfWeek()
         );
 
         $flashType = $result['success'] ? 'success' : 'error';
