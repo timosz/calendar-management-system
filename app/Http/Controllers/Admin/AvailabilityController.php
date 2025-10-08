@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Availability\BuildWeeklyScheduleAction;
 use App\Actions\Availability\ToggleDayAvailabilityAction;
 use App\Actions\Availability\UpdateWeeklyAvailabilityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAvailabilitiesRequest;
-use App\Models\Availability;
 use App\Services\TimeSlotService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +18,7 @@ class AvailabilityController extends Controller
 {
     public function __construct(
         protected TimeSlotService $timeSlotService,
+        protected BuildWeeklyScheduleAction $buildWeeklySchedule,
         protected UpdateWeeklyAvailabilityAction $updateWeeklyAvailability,
         protected ToggleDayAvailabilityAction $toggleDayAvailability
     ) {
@@ -25,34 +26,8 @@ class AvailabilityController extends Controller
 
     public function index(): Response
     {
-        // Get all availabilities for the authenticated user, indexed by day_of_week
-        $availabilities = Auth::user()
-            ->availabilities()
-            ->get()
-            ->keyBy('day_of_week');
-
-        // Prepare the weekly schedule data
-        $weeklySchedule = [];
-        $dayNames = Availability::getDayNames();
-
-        // Start from Monday (1) and include Sunday (0) at the end
-        $dayOrder = [1, 2, 3, 4, 5, 6, 0];
-
-        foreach ($dayOrder as $dayNumber) {
-            $availability = $availabilities->get($dayNumber);
-
-            $weeklySchedule[] = [
-                'day_of_week' => $dayNumber,
-                'day_name' => $dayNames[$dayNumber],
-                'is_active' => $availability ? $availability->is_active : false,
-                'start_time' => $availability ? $availability->start_time : null,
-                'end_time' => $availability ? $availability->end_time : null,
-                'id' => $availability ? $availability->id : null,
-            ];
-        }
-
         return Inertia::render('Admin/Availabilities/Index', [
-            'weeklySchedule' => $weeklySchedule,
+            'weeklySchedule' => $this->buildWeeklySchedule->execute(Auth::user()),
             'timeSlots' => $this->timeSlotService->generateTimeOptions(15),
         ]);
     }
