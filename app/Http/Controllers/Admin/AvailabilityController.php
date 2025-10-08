@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateAvailabilitiesRequest;
 use App\Models\Availability;
 use App\Services\TimeSlotService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class AvailabilityController extends Controller
 {
@@ -54,24 +55,12 @@ class AvailabilityController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(UpdateAvailabilitiesRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'availabilities' => 'required|array',
-            'availabilities.*.day_of_week' => 'required|integer|between:0,6',
-            'availabilities.*.is_active' => 'required|boolean',
-            'availabilities.*.start_time' => 'nullable|date_format:H:i|required_if:availabilities.*.is_active,true',
-            'availabilities.*.end_time' => 'nullable|date_format:H:i|required_if:availabilities.*.is_active,true|after:availabilities.*.start_time',
-        ], [
-            'availabilities.*.start_time.required_if' => 'Start time is required when day is active.',
-            'availabilities.*.end_time.required_if' => 'End time is required when day is active.',
-            'availabilities.*.end_time.after' => 'End time must be after start time.',
-        ]);
-
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($request) {
             $userId = Auth::id();
 
-            foreach ($validated['availabilities'] as $availabilityData) {
+            foreach ($request->validated()['availabilities'] as $availabilityData) {
                 $dayOfWeek = $availabilityData['day_of_week'];
 
                 // Find existing availability for this day
