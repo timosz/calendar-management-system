@@ -50,7 +50,7 @@ class AvailabilityController extends Controller
 
         return Inertia::render('Admin/Availabilities/Index', [
             'weeklySchedule' => $weeklySchedule,
-            'timeSlots' => $this->timeSlotService->generateTimeSlots(15),
+            'timeSlots' => $this->timeSlotService->generateTimeOptions(15),
         ]);
     }
 

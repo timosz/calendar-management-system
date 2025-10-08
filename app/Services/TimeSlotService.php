@@ -2,18 +2,20 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Support\Collection;
+
 class TimeSlotService
 {
     /**
-     * Generate time slots for a given interval
-     *
-     * @param int $intervalMinutes The interval in minutes (default: 15)
-     * @param int $startHour Starting hour (default: 0)
-     * @param int $endHour Ending hour (default: 24)
-     * @return array
+     * Generate time slots for dropdowns/selectors
      */
-    public function generateTimeSlots(int $intervalMinutes = 15, int $startHour = 0, int $endHour = 24): array
-    {
+    public function generateTimeOptions(
+        int $intervalMinutes = 15,
+        int $startHour = 0,
+        int $endHour = 24
+    ): array {
         $timeSlots = [];
 
         for ($hour = $startHour; $hour < $endHour; $hour++) {
@@ -28,5 +30,33 @@ class TimeSlotService
         }
 
         return $timeSlots;
+    }
+
+    /**
+     * Generate bookable time slots between start and end time
+     */
+    public function generateSlots(
+        string $startTime,
+        string $endTime,
+        int $intervalMinutes,
+        int $slotDurationMinutes
+    ): Collection {
+        $start = Carbon::parse($startTime);
+        $end = Carbon::parse($endTime)->subMinutes($slotDurationMinutes);
+
+        $period = CarbonPeriod::create(
+            $start,
+            "{$intervalMinutes} minutes",
+            $end
+        );
+
+        return collect($period)->map(function ($slotStart) use ($slotDurationMinutes) {
+            $slotEnd = $slotStart->copy()->addMinutes($slotDurationMinutes);
+
+            return [
+                'start_time' => $slotStart->format('H:i'),
+                'end_time' => $slotEnd->format('H:i'),
+            ];
+        });
     }
 }

@@ -72,7 +72,7 @@ class RestrictionController extends Controller
     {
         return Inertia::render('Admin/Restrictions/Create', [
             'types' => Restriction::getTypes(),
-            'timeSlots' => $this->timeSlotService->generateTimeSlots(30), // 30-minute intervals for restrictions
+            'timeSlots' => $this->timeSlotService->generateTimeOptions(30), // 30-minute intervals for restrictions
         ]);
     }
 
@@ -110,7 +110,7 @@ class RestrictionController extends Controller
                 'type' => $restriction->type,
             ],
             'types' => Restriction::getTypes(),
-            'timeSlots' => $this->timeSlotService->generateTimeSlots(30),
+            'timeSlots' => $this->timeSlotService->generateTimeOptions(30),
         ]);
     }
 
