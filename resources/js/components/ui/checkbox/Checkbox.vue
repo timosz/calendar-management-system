@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { CheckboxRootEmits, CheckboxRootProps } from 'reka-ui'
 import { cn } from '@/lib/utils'
-import { Check } from 'lucide-vue-next'
+import { Check, Minus } from 'lucide-vue-next'
 import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from 'reka-ui'
 import { computed, type HTMLAttributes } from 'vue'
 
-const props = defineProps<CheckboxRootProps & { class?: HTMLAttributes['class'] }>()
+const props = defineProps<CheckboxRootProps & { 
+  class?: HTMLAttributes['class']
+  indeterminate?: boolean 
+}>()
 const emits = defineEmits<CheckboxRootEmits>()
 
 const delegatedProps = computed(() => {
@@ -22,16 +25,20 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     data-slot="checkbox"
     v-bind="forwarded"
     :class="
-      cn('peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
+      cn('peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground data-[state=indeterminate]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
          props.class)"
   >
     <CheckboxIndicator
       data-slot="checkbox-indicator"
       class="flex items-center justify-center text-current transition-none"
+      :force-mount="indeterminate"
     >
-      <slot>
+      <template v-if="indeterminate">
+        <Minus class="size-3.5" />
+      </template>
+      <template v-else>
         <Check class="size-3.5" />
-      </slot>
+      </template>
     </CheckboxIndicator>
   </CheckboxRoot>
 </template>

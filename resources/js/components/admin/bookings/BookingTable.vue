@@ -30,13 +30,18 @@
 
     const emit = defineEmits<Emits>();
 
-    const allSelected = computed(() => {
-        return props.bookings.length > 0 && props.selectedBookings.length === props.bookings.length;
+    const allSelected = computed({
+        get: () => props.bookings.length > 0 && props.selectedBookings.length === props.bookings.length,
+        set: () => emit('toggle-select-all'),
     });
 
     const someSelected = computed(() => {
         return props.selectedBookings.length > 0 && props.selectedBookings.length < props.bookings.length;
     });
+
+    const isBookingSelected = (bookingId: number) => {
+        return props.selectedBookings.includes(bookingId);
+    };
 </script>
 
 <template>
@@ -46,7 +51,7 @@
                 <TableHeader>
                     <TableRow>
                         <TableHead class="w-12">
-                            <Checkbox :checked="allSelected" :indeterminate="someSelected" @update:checked="emit('toggle-select-all')" />
+                            <Checkbox v-model="allSelected" :indeterminate="someSelected" />
                         </TableHead>
                         <TableHead>Client</TableHead>
                         <TableHead>Date & Time</TableHead>
@@ -66,9 +71,9 @@
                         v-for="booking in bookings"
                         :key="booking.id"
                         :booking="booking"
-                        :selected="selectedBookings.includes(booking.id)"
+                        :selected="isBookingSelected(booking.id)"
                         :show-actions="showActions"
-                        @toggle-select="emit('toggle-select', booking.id)"
+                        @update:selected="emit('toggle-select', booking.id)"
                         @view="emit('view', booking.id)"
                         @confirm="emit('confirm', booking.id)"
                         @reject="emit('reject', booking.id)"

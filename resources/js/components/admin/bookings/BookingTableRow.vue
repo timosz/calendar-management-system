@@ -6,6 +6,7 @@
     import { TableCell, TableRow } from '@/components/ui/table';
     import type { BookingIndexItem } from '@/types';
     import { Ban, Calendar, Check, Clock, Eye, MoreVertical, Trash2, X } from 'lucide-vue-next';
+    import { computed } from 'vue';
 
     interface Props {
         booking: BookingIndexItem;
@@ -14,7 +15,7 @@
     }
 
     interface Emits {
-        (e: 'toggle-select'): void;
+        (e: 'update:selected', value: boolean): void;
         (e: 'view'): void;
         (e: 'confirm'): void;
         (e: 'reject'): void;
@@ -22,11 +23,16 @@
         (e: 'delete'): void;
     }
 
-    withDefaults(defineProps<Props>(), {
+    const props = withDefaults(defineProps<Props>(), {
         showActions: true,
     });
 
     const emit = defineEmits<Emits>();
+
+    const isSelected = computed({
+        get: () => props.selected,
+        set: (value) => emit('update:selected', value),
+    });
 
     const getStatusColor = (status: string) => {
         const colors = {
@@ -51,7 +57,7 @@
 <template>
     <TableRow>
         <TableCell>
-            <Checkbox :checked="selected" @update:checked="emit('toggle-select')" />
+            <Checkbox v-model="isSelected" />
         </TableCell>
         <TableCell>
             <div class="font-medium">{{ booking.client_name }}</div>
