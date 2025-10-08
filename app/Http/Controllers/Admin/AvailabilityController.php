@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Availability\ToggleDayAvailabilityAction;
+use App\Actions\Availability\UpdateWeeklyAvailabilityAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateAvailabilitiesRequest;
 use App\Models\Availability;
@@ -9,15 +11,15 @@ use App\Services\TimeSlotService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AvailabilityController extends Controller
 {
     public function __construct(
-        protected TimeSlotService $timeSlotService
+        protected TimeSlotService $timeSlotService,
+        protected UpdateWeeklyAvailabilityAction $updateWeeklyAvailability,
+        protected ToggleDayAvailabilityAction $toggleDayAvailability
     ) {
     }
 
@@ -57,40 +59,10 @@ class AvailabilityController extends Controller
 
     public function update(UpdateAvailabilitiesRequest $request): RedirectResponse
     {
-        DB::transaction(function () use ($request) {
-            $userId = Auth::id();
-
-            foreach ($request->validated()['availabilities'] as $availabilityData) {
-                $dayOfWeek = $availabilityData['day_of_week'];
-
-                // Find existing availability for this day
-                $availability = Availability::where('user_id', $userId)
-                    ->where('day_of_week', $dayOfWeek)
-                    ->first();
-
-                if ($availabilityData['is_active']) {
-                    // Create or update availability
-                    $data = [
-                        'user_id' => $userId,
-                        'day_of_week' => $dayOfWeek,
-                        'start_time' => $availabilityData['start_time'],
-                        'end_time' => $availabilityData['end_time'],
-                        'is_active' => true,
-                    ];
-
-                    if ($availability) {
-                        $availability->update($data);
-                    } else {
-                        Availability::create($data);
-                    }
-                } else {
-                    // If not active, delete the availability if it exists
-                    if ($availability) {
-                        $availability->delete();
-                    }
-                }
-            }
-        });
+        $this->updateWeeklyAvailability->execute(
+            Auth::id(),
+            $request->validated()['availabilities']
+        );
 
         return redirect()
             ->route('admin.availabilities.index')
@@ -106,26 +78,15 @@ class AvailabilityController extends Controller
             'day_of_week' => 'required|integer|between:0,6',
         ]);
 
-        $availability = Auth::user()
-            ->availabilities()
-            ->where('day_of_week', $validated['day_of_week'])
-            ->first();
+        $result = $this->toggleDayAvailability->execute(
+            Auth::id(),
+            $validated['day_of_week']
+        );
 
-        if ($availability) {
-            $availability->update([
-                'is_active' => !$availability->is_active,
-            ]);
-
-            $status = $availability->is_active ? 'activated' : 'deactivated';
-            $dayName = $availability->day_name;
-
-            return redirect()
-                ->route('admin.availabilities.index')
-                ->with('success', "{$dayName} availability {$status} successfully.");
-        }
+        $flashType = $result['success'] ? 'success' : 'error';
 
         return redirect()
             ->route('admin.availabilities.index')
-            ->with('error', 'No availability found for this day.');
+            ->with($flashType, $result['message']);
     }
 }
