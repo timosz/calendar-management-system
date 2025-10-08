@@ -3,13 +3,17 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\Booking;
-use App\Models\Restriction;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class AvailabilityService
 {
+    public function __construct(
+        private TimeSlotService $timeSlotService,
+        private SlotAvailabilityChecker $availabilityChecker
+    ) {
+    }
+
     /**
      * Get available slots for a specific date
      */
@@ -34,101 +38,31 @@ class AvailabilityService
         }
 
         // Generate all possible slots using config values
-        $slots = $this->generateTimeSlots(
+        $slots = $this->timeSlotService->generateSlots(
             $availability->start_time,
             $availability->end_time,
             config('booking.slot_interval_minutes'),
             config('booking.slot_duration_minutes')
+        )->toArray();
+
+        // Get restrictions and bookings for this date
+        $dateRestrictions = $this->getDateRestrictions($user, $date, $restrictions);
+        $dateBookings = $this->getDateBookings($user, $date, $bookings);
+
+        // Check availability for all slots
+        $processedSlots = $this->availabilityChecker->checkSlots(
+            $slots,
+            $date,
+            $dateRestrictions,
+            $dateBookings
         );
 
-        // Filter restrictions for this specific date
-        $dateRestrictions = $restrictions
-            ? $restrictions->filter(fn ($r) => $r->affectsDate($date))
-            : $user->restrictions()->affectingDateRange($date, $date)->get();
-
-        // Filter bookings for this specific date
-        $dateBookings = $bookings
-            ? $bookings->filter(function ($booking) use ($date) {
-                return $booking->booking_date->isSameDay($date);
-            })
-            : $user->bookings()
-                ->whereDate('booking_date', $date->toDateString())
-                ->confirmed()
-                ->get();
-
-        // Mark slots as available/unavailable
-        $processedSlots = array_map(function ($slot) use ($date, $dateRestrictions, $dateBookings) {
-            $startTime = $slot['start_time'];
-            $endTime = $slot['end_time'];
-
-            // Check if slot conflicts with any restriction
-            foreach ($dateRestrictions as $restriction) {
-                if ($restriction->conflictsWithTimeRange($date, $startTime, $endTime)) {
-                    return [
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'available' => false,
-                        'reason' => $restriction->reason ?: ucfirst($restriction->type),
-                    ];
-                }
-            }
-
-            // Check if slot conflicts with any confirmed booking
-            foreach ($dateBookings as $booking) {
-                if ($booking->conflictsWithTimeRange($startTime, $endTime)) {
-                    return [
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'available' => false,
-                    ];
-                }
-            }
-
-            // Slot is available
-            return [
-                'start_time' => $startTime,
-                'end_time' => $endTime,
-                'available' => true,
-            ];
-        }, $slots);
-
-        // Filter out unavailable slots if debug mode is off
+        // Filter out unavailable slots if requested
         if (!$showUnavailable) {
-            $processedSlots = array_filter($processedSlots, fn ($slot) => $slot['available']);
-            // Re-index array to ensure sequential keys for JSON
-            $processedSlots = array_values($processedSlots);
+            $processedSlots = $this->availabilityChecker->filterAvailable($processedSlots);
         }
 
         return $processedSlots;
-    }
-
-    /**
-     * Generate time slots between start and end time
-     */
-    private function generateTimeSlots(
-        string $startTime,
-        string $endTime,
-        int $intervalMinutes,
-        int $slotDurationMinutes
-    ): array {
-        $slots = [];
-        $start = Carbon::parse($startTime);
-        $end = Carbon::parse($endTime);
-
-        $current = $start->copy();
-
-        while ($current->copy()->addMinutes($slotDurationMinutes)->lessThanOrEqualTo($end)) {
-            $slotEnd = $current->copy()->addMinutes($slotDurationMinutes);
-
-            $slots[] = [
-                'start_time' => $current->format('H:i'),
-                'end_time' => $slotEnd->format('H:i'),
-            ];
-
-            $current->addMinutes($intervalMinutes);
-        }
-
-        return $slots;
     }
 
     /**
@@ -156,7 +90,6 @@ class AvailabilityService
             ->confirmed()
             ->get()
             ->groupBy(function ($booking) {
-                // Group by the string format of the date
                 return $booking->booking_date->toDateString();
             });
 
@@ -199,5 +132,28 @@ class AvailabilityService
     public function getMaxWeeksAhead(): int
     {
         return config('booking.max_weeks_ahead');
+    }
+
+    /**
+     * Get restrictions for a specific date
+     */
+    private function getDateRestrictions(User $user, Carbon $date, ?Collection $restrictions): Collection
+    {
+        return $restrictions
+            ? $restrictions->filter(fn ($r) => $r->affectsDate($date))
+            : $user->restrictions()->affectingDateRange($date, $date)->get();
+    }
+
+    /**
+     * Get bookings for a specific date
+     */
+    private function getDateBookings(User $user, Carbon $date, ?Collection $bookings): Collection
+    {
+        return $bookings
+            ? $bookings->filter(fn ($booking) => $booking->booking_date->isSameDay($date))
+            : $user->bookings()
+                ->whereDate('booking_date', $date->toDateString())
+                ->confirmed()
+                ->get();
     }
 }
