@@ -63,6 +63,19 @@ describe('AvailabilityController', function () {
         ]);
     });
 
+    it('requires start time for active days', function () {
+        $response = $this->put(route('admin.availabilities.update'), [
+            'availabilities' => [
+                [
+                    'day_of_week' => 1,
+                    'is_active' => true
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors(['availabilities.0.start_time']);
+    });
+
     it('validates end time after start time', function () {
         $response = $this->put(route('admin.availabilities.update'), [
             'availabilities' => [
