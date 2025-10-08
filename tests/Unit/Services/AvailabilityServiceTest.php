@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Services\AvailabilityService;
 
 beforeEach(function () {
-    $this->service = new AvailabilityService();
+    $this->service = app(AvailabilityService::class);
     $this->user = User::factory()->create();
 
     // Setup default config values for tests
