@@ -1,7 +1,14 @@
 <?php
 
-use App\Models\User;
 use App\Models\Availability;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+
+test('verify database connection', function () {
+    $database = DB::connection()->getDatabaseName();
+
+    expect($database)->toBe('testing');
+});
 
 test('returns a successful response', function () {
     // Create a user with at least one active availability
