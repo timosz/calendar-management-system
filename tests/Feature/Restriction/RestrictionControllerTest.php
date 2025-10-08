@@ -4,6 +4,7 @@ use App\Models\Booking;
 use App\Models\Restriction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
@@ -53,9 +54,12 @@ describe('RestrictionController', function () {
     });
 
     it('stores all-day restriction', function () {
+        $startDate = Carbon::now()->format('Y-m-d');
+        $endDate = Carbon::now()->addDays(4)->format('Y-m-d');
+
         $response = $this->post(route('admin.restrictions.store'), [
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-05',
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'start_time' => null,
             'end_time' => null,
             'type' => 'holiday',
@@ -66,17 +70,20 @@ describe('RestrictionController', function () {
 
         $this->assertDatabaseHas('restrictions', [
             'user_id' => $this->user->id,
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-05',
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'type' => 'holiday',
             'reason' => 'Vacation',
         ]);
     });
 
     it('stores partial-day restriction', function () {
+        $startDate = Carbon::now()->format('Y-m-d');
+        $endDate = Carbon::now()->addDays(2)->format('Y-m-d');
+
         $response = $this->post(route('admin.restrictions.store'), [
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-01',
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'start_time' => '12:00',
             'end_time' => '13:00',
             'type' => 'break',
@@ -93,9 +100,11 @@ describe('RestrictionController', function () {
     });
 
     it('validates end time after start time', function () {
+        $date = Carbon::now()->format('Y-m-d');
+
         $response = $this->post(route('admin.restrictions.store'), [
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-01',
+            'start_date' => $date,
+            'end_date' => $date,
             'start_time' => '17:00',
             'end_time' => '09:00',
             'type' => 'other',
@@ -105,9 +114,11 @@ describe('RestrictionController', function () {
     });
 
     it('requires times together', function () {
+        $date = Carbon::now()->format('Y-m-d');
+
         $response = $this->post(route('admin.restrictions.store'), [
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-01',
+            'start_date' => $date,
+            'end_date' => $date,
             'start_time' => '12:00',
             'end_time' => null,
             'type' => 'break',
@@ -117,10 +128,12 @@ describe('RestrictionController', function () {
     });
 
     it('prevents conflict with confirmed booking', function () {
+        $date = Carbon::now()->addMonth()->format('Y-m-d');
+
         // Create a confirmed booking
         Booking::factory()->create([
             'user_id' => $this->user->id,
-            'booking_date' => '2025-10-01',
+            'booking_date' => $date,
             'start_time' => '10:00',
             'end_time' => '11:00',
             'status' => 'confirmed',
@@ -128,8 +141,8 @@ describe('RestrictionController', function () {
 
         // Try to create overlapping restriction
         $response = $this->post(route('admin.restrictions.store'), [
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-01',
+            'start_date' => $date,
+            'end_date' => $date,
             'start_time' => '09:00',
             'end_time' => '12:00',
             'type' => 'meeting',
@@ -159,9 +172,11 @@ describe('RestrictionController', function () {
             'type' => 'break',
         ]);
 
+        $date = Carbon::now()->addMonth()->format('Y-m-d');
+
         $response = $this->put(route('admin.restrictions.update', $restriction), [
-            'start_date' => '2025-10-01',
-            'end_date' => '2025-10-01',
+            'start_date' => $date,
+            'end_date' => $date,
             'start_time' => '12:00',
             'end_time' => '13:00',
             'type' => 'meeting',
